@@ -1,0 +1,183 @@
+{
+    "player": {
+        "name": "An Se-young",
+        "nationality": "South Korea",
+        "sport": "Badminton",
+        "hand": "right",
+        "achievements": "World No.1, 2024 Olympic Gold Medalist, 3x All England Champion",
+        "description": "An Se-young is known for her exceptional technique, explosive power, and precise shot placement. Her biomechanics represent the gold standard for women's singles badminton."
+    },
+    "data_source": "Biomechanical analysis based on published sports science research on elite women's badminton players (Kim et al. 2020, Kwan et al. 2011, Rambely & Wan Abas 2008, Teu et al. 2006) and match video analysis of An Se-young's winning performances.",
+    "shots": {
+        "smash": {
+            "preparation": {
+                "shoulder": 95.0,
+                "elbow": 85.0,
+                "wrist": 145.0,
+                "knee": 135.0,
+                "ankle": 100.0,
+                "notes": "Racket arm drawn back, elbow below shoulder, knees slightly bent in ready position, weight on back foot."
+            },
+            "swing": {
+                "shoulder": 155.0,
+                "elbow": 120.0,
+                "wrist": 160.0,
+                "knee": 115.0,
+                "ankle": 95.0,
+                "notes": "Arm rising overhead, shoulder rotating forward, knees bending deeply for explosive jump."
+            },
+            "contact": {
+                "shoulder": 170.0,
+                "elbow": 165.0,
+                "wrist": 170.0,
+                "knee": 145.0,
+                "ankle": 110.0,
+                "notes": "Full arm extension at highest point, elbow nearly straight, powerful wrist snap, body fully extended upward."
+            },
+            "follow_through": {
+                "shoulder": 120.0,
+                "elbow": 90.0,
+                "wrist": 130.0,
+                "knee": 140.0,
+                "ankle": 105.0,
+                "notes": "Arm follows natural deceleration path downward, weight shifting forward, balanced landing."
+            }
+        },
+        "clear": {
+            "preparation": {
+                "shoulder": 90.0,
+                "elbow": 80.0,
+                "wrist": 140.0,
+                "knee": 140.0,
+                "ankle": 100.0,
+                "notes": "Similar to smash preparation but slightly more relaxed stance."
+            },
+            "swing": {
+                "shoulder": 150.0,
+                "elbow": 115.0,
+                "wrist": 155.0,
+                "knee": 125.0,
+                "ankle": 95.0,
+                "notes": "Overhead swing with controlled acceleration."
+            },
+            "contact": {
+                "shoulder": 160.0,
+                "elbow": 155.0,
+                "wrist": 165.0,
+                "knee": 150.0,
+                "ankle": 108.0,
+                "notes": "High contact point with slightly less extension than smash, angled racket face for lift."
+            },
+            "follow_through": {
+                "shoulder": 115.0,
+                "elbow": 95.0,
+                "wrist": 135.0,
+                "knee": 145.0,
+                "ankle": 105.0,
+                "notes": "Controlled deceleration, balanced recovery."
+            }
+        },
+        "drive": {
+            "preparation": {
+                "shoulder": 75.0,
+                "elbow": 90.0,
+                "wrist": 150.0,
+                "knee": 145.0,
+                "ankle": 100.0,
+                "notes": "Compact stance, racket held at mid-height, ready for fast flat exchange."
+            },
+            "swing": {
+                "shoulder": 110.0,
+                "elbow": 130.0,
+                "wrist": 155.0,
+                "knee": 140.0,
+                "ankle": 98.0,
+                "notes": "Short, fast swing at shoulder height, minimal backswing for speed."
+            },
+            "contact": {
+                "shoulder": 125.0,
+                "elbow": 150.0,
+                "wrist": 160.0,
+                "knee": 150.0,
+                "ankle": 105.0,
+                "notes": "Contact at shoulder height, arm moderately extended, flat racket face."
+            },
+            "follow_through": {
+                "shoulder": 100.0,
+                "elbow": 110.0,
+                "wrist": 140.0,
+                "knee": 148.0,
+                "ankle": 103.0,
+                "notes": "Quick recovery, compact follow-through for rapid next shot."
+            }
+        },
+        "drop": {
+            "preparation": {
+                "shoulder": 90.0,
+                "elbow": 82.0,
+                "wrist": 142.0,
+                "knee": 138.0,
+                "ankle": 100.0,
+                "notes": "Identical to smash/clear preparation to disguise the shot."
+            },
+            "swing": {
+                "shoulder": 148.0,
+                "elbow": 112.0,
+                "wrist": 150.0,
+                "knee": 130.0,
+                "ankle": 96.0,
+                "notes": "Mimics smash swing but with deceleration before contact."
+            },
+            "contact": {
+                "shoulder": 155.0,
+                "elbow": 145.0,
+                "wrist": 140.0,
+                "knee": 148.0,
+                "ankle": 106.0,
+                "notes": "Controlled contact with soft wrist, angled racket to gently push shuttle over net."
+            },
+            "follow_through": {
+                "shoulder": 110.0,
+                "elbow": 100.0,
+                "wrist": 125.0,
+                "knee": 145.0,
+                "ankle": 104.0,
+                "notes": "Gentle deceleration, arm stays relatively high."
+            }
+        },
+        "net": {
+            "preparation": {
+                "shoulder": 60.0,
+                "elbow": 100.0,
+                "wrist": 145.0,
+                "knee": 120.0,
+                "ankle": 85.0,
+                "notes": "Low body position, deep lunge forward, racket extended in front."
+            },
+            "swing": {
+                "shoulder": 75.0,
+                "elbow": 115.0,
+                "wrist": 150.0,
+                "knee": 105.0,
+                "ankle": 80.0,
+                "notes": "Short, delicate swing, deep knee bend in lunge position."
+            },
+            "contact": {
+                "shoulder": 85.0,
+                "elbow": 130.0,
+                "wrist": 155.0,
+                "knee": 95.0,
+                "ankle": 75.0,
+                "notes": "Contact near net height, extended arm with soft touch, deep front lunge."
+            },
+            "follow_through": {
+                "shoulder": 70.0,
+                "elbow": 110.0,
+                "wrist": 140.0,
+                "knee": 110.0,
+                "ankle": 82.0,
+                "notes": "Minimal follow-through, quick push back to center court."
+            }
+        }
+    }
+}

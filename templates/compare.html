@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2>Advanced Comparison</h2>
+            <p style="color: var(--text-muted);">Comparing {{ r1.filename }} vs {{ r2.filename }}</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+    </div>
+
+    <!-- Video & Snapshot Row -->
+    <div class="compare-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        
+        <!-- Setup A Column -->
+        <div class="card video-wrapper" style="text-align: center; background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(59, 130, 246, 0.05));">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-cyan);">Session A ({{ r1.upload_date.strftime('%b %d') }})</h3>
+            
+            <div style="border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
+                <video controls style="width: 100%; display: block; border-bottom: 2px solid var(--border);">
+                    <source src="{{ url_for('serve_uploaded_video', filename=r1.filename) }}" type="video/mp4">
+                </video>
+            </div>
+            
+            {% if r1.snapshot_path %}
+                <img src="{{ url_for('serve_processed_video', filename=r1.snapshot_path) }}" 
+                     alt="Pose A" 
+                     style="width: 100%; border-radius: 8px; border: 2px solid var(--border); margin-bottom: 1rem;">
+                {% if r1.worst_timestamp %}
+                    <p style="font-weight: bold; color: var(--text-main);">⏱️ Flaw at {{ r1.worst_timestamp }}</p>
+                {% endif %}
+            {% else %}
+                <p>No alignment flaw detected.</p>
+            {% endif %}
+        </div>
+
+        <!-- Setup B Column -->
+        <div class="card video-wrapper" style="text-align: center; background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(244, 63, 94, 0.05));">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-pink);">Session B ({{ r2.upload_date.strftime('%b %d') }})</h3>
+            
+            <div style="border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
+                <video controls style="width: 100%; display: block; border-bottom: 2px solid var(--border);">
+                    <source src="{{ url_for('serve_uploaded_video', filename=r2.filename) }}" type="video/mp4">
+                </video>
+            </div>
+            
+            {% if r2.snapshot_path %}
+                <img src="{{ url_for('serve_processed_video', filename=r2.snapshot_path) }}" 
+                     alt="Pose B" 
+                     style="width: 100%; border-radius: 8px; border: 2px solid var(--border); margin-bottom: 1rem;">
+                {% if r2.worst_timestamp %}
+                    <p style="font-weight: bold; color: var(--text-main);">⏱️ Flaw at {{ r2.worst_timestamp }}</p>
+                {% endif %}
+            {% else %}
+                <p>No alignment flaw detected.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Analytics Row -->
+    <div style="display: block;">
+        
+        <!-- AI Coaching Delta -->
+        <div class="card" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 2rem; text-align: center;">Kinetic Joint Analysis</h3>
+            
+            {% set arm_dif = (r2.arm_score or 0) - (r1.arm_score or 0) %}
+            {% set hip_dif = (r2.hip_score or 0) - (r1.hip_score or 0) %}
+            {% set knee_dif = (r2.knee_score or 0) - (r1.knee_score or 0) %}
+            
+            <!-- Arm Bar -->
+            <div style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <span>💪 Arm Extension</span>
+                    <span style="color: {% if arm_dif > 0 %}green{% else %}red{% endif %};">{% if arm_dif > 0 %}+{% endif %}{{ "%.1f"|format(arm_dif) }}% Delta</span>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r1.arm_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r2.arm_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Hub Bar -->
+            <div style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <span>🔄 Core Pivot</span>
+                    <span style="color: {% if hip_dif > 0 %}green{% else %}red{% endif %};">{% if hip_dif > 0 %}+{% endif %}{{ "%.1f"|format(hip_dif) }}% Delta</span>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r1.hip_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r2.hip_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knee Bar -->
+            <div style="margin-bottom: 3rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <span>🦵 Knee Bend</span>
+                    <span style="color: {% if knee_dif > 0 %}green{% else %}red{% endif %};">{% if knee_dif > 0 %}+{% endif %}{{ "%.1f"|format(knee_dif) }}% Delta</span>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r1.knee_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
+                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="width: {{ r2.knee_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                <h4 style="margin: 0 0 0.5rem 0; color: var(--text-main);">🤖 Overall Result</h4>
+                
+                {% set total_dif_avg = (arm_dif + hip_dif + knee_dif) / 3 %}
+                <p style="color: var(--text-muted); line-height: 1.6; font-size: 1.05rem; margin: 0;">
+                    {% if total_dif_avg > 5 %}
+                        <strong style="color: green;">✅ Big Improvement:</strong> You did a great job! Your body posture got much better by <strong>+{{ "%.1f"|format(total_dif_avg) }}%</strong>. Focus on keeping this up!
+                    {% elif total_dif_avg > 0 %}
+                        <strong style="color: green;">✅ Small Improvement:</strong> You are getting slightly better (+{{ "%.1f"|format(total_dif_avg) }}%). Keep doing your training drills!
+                    {% elif total_dif_avg == 0 %}
+                        <strong style="color: gray;">⚖️ No Change:</strong> Your score is exactly the same. You might need to train a little harder to fix your posture.
+                    {% elif total_dif_avg < -5 %}
+                        <strong style="color: red;">⚠️ Getting Worse:</strong> Your posture was much worse this time (-{{ "%.1f"|format(total_dif_avg|abs) }}%). You might be very tired, or you are forgetting the basics.
+                    {% else %}
+                        <strong style="color: red;">⚠️ Small Drop:</strong> You did slightly worse (-{{ "%.1f"|format(total_dif_avg|abs) }}%) this time. Remember to do a full warm-up before you play!
+                    {% endif %}
+                </p>
+            </div>
+
+            <div style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.5rem;">
+                <h4 style="color: var(--accent-cyan); margin-bottom: 1rem; font-size: 1.25rem;">📋 What to do next:</h4>
+                <div style="color: var(--text-main); line-height: 1.6; font-size: 1.1rem;">
+                    {% if arm_dif <= hip_dif and arm_dif <= knee_dif %}
+                        {% if arm_dif < 0 %}
+                            <strong style="color: #ef4444;">Your Arm Extension got worse (-{{ "%.1f"|format(arm_dif|abs) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/TXFEXGFj5Ac?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/band_extension_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-pink); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Band Pull Extension</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Hold a rubber exercise band and pull it straight up over your head (15 times).</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: Keep your arm super straight. Do not bend your elbow at the top!</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <strong style="color: #22c55e;">Your Arm Extension is getting better, but still needs work (+{{ "%.1f"|format(arm_dif) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/faG2NWIVM18?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/shadow_swing_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-neon-blue); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Fast Shadow Swing</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Swing your racket very fast without hitting a shuttle (20 times).</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: Make sure to snap your arm completely straight at the very top of your swing.</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% endif %}
+                    {% elif hip_dif <= arm_dif and hip_dif <= knee_dif %}
+                        {% if hip_dif < 0 %}
+                            <strong style="color: #ef4444;">Your Body Rotation got worse (-{{ "%.1f"|format(hip_dif|abs) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/twist_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-pink); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Med Ball Torso Twist</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Hold a heavy ball and twist your body side to side (15 times).</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: Don't just use your arm to hit! You need to turn your stomach and hips too.</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <strong style="color: #22c55e;">Your Body Rotation is improving, but still needs work (+{{ "%.1f"|format(hip_dif) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/wall_throw_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-neon-blue); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Power Wall Throw</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Stand far away and throw a ball against a wall fast.</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: Remember to turn your hips forward first, then follow with your arm.</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% endif %}
+                    {% else %}
+                        {% if knee_dif < 0 %}
+                            <strong style="color: #ef4444;">Your Knee Bend got worse (-{{ "%.1f"|format(knee_dif|abs) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/lunge_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-pink); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Court Lunges</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Do 10 deep lunges (take a big step forward and bend down).</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: You are standing too tall and straight. Bend down low like a spring!</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% else %}
+                            <strong style="color: #22c55e;">Your Knee Bend is improving, but still needs work (+{{ "%.1f"|format(knee_dif) }}%).</strong>
+                            
+                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                                <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
+                                    <img src="{{ url_for('static', filename='img/lunge_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">
+                                        <span style="color: white; font-size: 20px; margin-left: 4px;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="flex-grow: 1;">
+                                    <h5 style="color: var(--accent-neon-blue); margin: 0 0 0.5rem 0; font-size: 1.15rem;">🏸 Video Drill: Explosive Court Jumps</h5>
+                                    <p style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-muted);">Do 10 big jumps on the court.</p>
+                                    <div style="background: rgba(34,211,238,0.1); padding: 0.5rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--accent-cyan); display: inline-block;">
+                                        <em style="font-size: 0.9rem; color: var(--accent-cyan); font-weight: 500;">💡 Tip: Jump high, but land softly with your knees bent so you don't hurt them.</em>
+                                    </div>
+                                </div>
+                            </div>
+
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

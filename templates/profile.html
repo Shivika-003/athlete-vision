@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="card" style="max-width: 600px; margin: 0 auto; padding: 3rem;">
+        <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">Athlete Profile</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Manage your player details.</p>
+        
+        <form method="POST" action="{{ url_for('profile') }}">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Username</label>
+                <input type="text" disabled value="{{ user.username }}" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Play Style</label>
+                    <select name="play_style" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+                        <option value="" {% if not user.play_style %}selected{% endif %}>Select Play Style...</option>
+                        <option value="Aggressive Attacker" {% if user.play_style == "Aggressive Attacker" %}selected{% endif %}>Aggressive Attacker (Smash & Net)</option>
+                        <option value="Defensive Retriever" {% if user.play_style == "Defensive Retriever" %}selected{% endif %}>Defensive Retriever (Stamina & Placement)</option>
+                        <option value="Counter Attacker" {% if user.play_style == "Counter Attacker" %}selected{% endif %}>Counter Attacker (Patience & Speed)</option>
+                        <option value="All-Rounder" {% if user.play_style == "All-Rounder" %}selected{% endif %}>All-Rounder</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Current Level</label>
+                    <select name="current_level" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+                        <option value="" {% if not user.current_level %}selected{% endif %}>Select Current Level...</option>
+                        <option value="Beginner" {% if user.current_level == "Beginner" %}selected{% endif %}>Beginner (Recreational)</option>
+                        <option value="Intermediate" {% if user.current_level == "Intermediate" %}selected{% endif %}>Intermediate (Club Level)</option>
+                        <option value="Advanced" {% if user.current_level == "Advanced" %}selected{% endif %}>Advanced (Local Tournaments)</option>
+                        <option value="Professional" {% if user.current_level == "Professional" %}selected{% endif %}>Professional / Elite</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Racket Model / String Tension</label>
+                <input type="text" name="racket_brand" value="{{ user.racket_brand or '' }}" placeholder="e.g., Yonex Astrox 99 Pro @ 26 lbs" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Primary Training Goal</label>
+                <input type="text" name="training_goal" value="{{ user.training_goal or '' }}" placeholder="e.g., Increase smash power, fix elbow drop" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Additional Bio / Physical Stats</label>
+                <textarea name="bio" rows="3" placeholder="Height, Weight, injury history..." style="width: 100%; padding: 0.75rem; border-radius: 8px; resize: vertical;">{{ user.bio or '' }}</textarea>
+            </div>
+            
+            <button type="submit" class="btn">Save Profile Improvements</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

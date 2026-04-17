@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin-bottom: 0.25rem;">Reference Player</h2>
+            <p style="color: var(--text-muted);">Your AI benchmark — compare your technique against the best.</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+    </div>
+
+    {% if ref_player %}
+    <!-- ═══════════ PLAYER PROFILE CARD ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; overflow: hidden; position: relative;">
+        <!-- Accent stripe -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink), var(--accent-neon-blue));"></div>
+
+        <div style="display: grid; grid-template-columns: auto 1fr; gap: 2.5rem; align-items: start; padding-top: 1rem;">
+            <!-- Avatar / Icon -->
+            <div style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); display: flex; align-items: center; justify-content: center; font-size: 3.5rem; box-shadow: 0 8px 32px rgba(14,165,233,0.3); flex-shrink: 0;">
+                🏸
+            </div>
+
+            <div>
+                <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-neon-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    {{ ref_player.name }}
+                </h2>
+                <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 1rem;">
+                    🇰🇷 {{ ref_player.nationality or 'South Korea' }} &middot; {{ ref_player.sport or 'Badminton' }} &middot; {{ ref_player.hand|capitalize if ref_player.hand else 'Right' }}-handed
+                </p>
+
+                {% if ref_player.achievements %}
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem;">
+                    {% for badge in ref_player.achievements.split(',') %}
+                    <span style="background: rgba(14,165,233,0.08); color: var(--accent-cyan); padding: 0.35rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(14,165,233,0.15);">
+                        🏆 {{ badge.strip() }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if ref_player.description %}
+                <p style="color: var(--text-main); line-height: 1.7; font-size: 1.05rem; max-width: 700px;">
+                    {{ ref_player.description }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ PROFESSIONAL DEMO VIDEO ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; text-align: center;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.4rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            🎬 Professional Technique Demonstration
+        </h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+            Study this professional breakdown of elite badminton form. Your AI analysis compares your biomechanics against these ideal angles.
+        </p>
+        <iframe
+            width="100%"
+            style="aspect-ratio: 16/9; max-width: 720px; border-radius: 12px; border: 3px solid rgba(14,165,233,0.2); box-shadow: 0 10px 40px rgba(14,165,233,0.15);"
+            src="https://www.youtube.com/embed/faG2NWIVM18"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+        </iframe>
+    </div>
+
+    <!-- ═══════════ UPLOAD REFERENCE VIDEO ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 0.5rem; color: var(--accent-pink); font-size: 1.4rem;">📹 Add Reference Video</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload a professional video to extract new reference angle data. The analyzed biomechanics will instantly appear in the dashboard below.</p>
+        <form action="{{ url_for('upload_reference_video') }}" method="POST" enctype="multipart/form-data">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Video File</label>
+                    <input type="file" name="refVideoFile" accept="video/*" required style="width: 100%; padding: 0.6rem; border-radius: 8px;">
+                </div>
+                <div style="min-width: 150px;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600; font-size: 0.9rem;">Shot Type</label>
+                    <select name="shot_type" style="width: 100%; padding: 0.6rem; border-radius: 8px; font-weight: 600;">
+                        <option value="smash">Smash</option>
+                        <option value="clear">Clear</option>
+                        <option value="drive" selected>Drive</option>
+                        <option value="drop">Drop</option>
+                        <option value="net">Net</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-pink" style="white-space: nowrap;" onclick="sessionStorage.setItem('activeShotTab', document.querySelector('[name=shot_type]').value);">Upload & Process</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ═══════════ IDEAL ANGLE DASHBOARD ═══════════ -->
+    {% if ref_data %}
+    <div class="card animate-fade-in-up" id="reference-data-section" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 0.5rem; color: var(--accent-neon-blue); font-size: 1.4rem;">📐 Ideal Biomechanical Angles</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select a shot type to view the gold-standard joint angles extracted from the professional references.</p>
+
+        <!-- Shot Type Tabs -->
+        <div id="shot-tabs" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            {% for shot_type in ref_data.keys() %}
+            <button class="shot-tab-btn" data-shot="{{ shot_type }}"
+                    onclick="showShotData('{{ shot_type }}')"
+                    style="padding: 0.6rem 1.4rem; border-radius: 10px; border: 2px solid var(--border); background: transparent; color: var(--text-main); font-weight: 700; cursor: pointer; transition: all 0.25s; text-transform: capitalize; font-size: 0.95rem;">
+                {{ shot_type | capitalize }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <!-- Shot Data Panels -->
+        {% for shot_type, phases in ref_data.items() %}
+        <div class="shot-panel" id="panel-{{ shot_type }}" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+                {% for phase_name in ['preparation', 'swing', 'contact', 'follow_through'] %}
+                {% if phase_name in phases %}
+                {% set phase = phases[phase_name] %}
+                <div style="background: {% if phase_name == 'contact' %}rgba(14,165,233,0.06){% else %}rgba(255,255,255,0.02){% endif %}; border-radius: 14px; padding: 1.5rem; border: 1px solid {% if phase_name == 'contact' %}rgba(14,165,233,0.2){% else %}var(--border){% endif %}; position: relative;">
+                    {% if phase_name == 'contact' %}
+                    <div style="position: absolute; top: 8px; right: 12px; background: var(--accent-cyan); color: white; padding: 0.15rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">KEY PHASE</div>
+                    {% endif %}
+                    <h4 style="text-transform: capitalize; margin-bottom: 1rem; font-size: 1.1rem; color: {% if phase_name == 'contact' %}var(--accent-cyan){% else %}var(--text-main){% endif %};">
+                        {% if phase_name == 'preparation' %}🔄{% elif phase_name == 'swing' %}💨{% elif phase_name == 'contact' %}⚡{% else %}🎯{% endif %}
+                        {{ phase_name | replace('_', ' ') | capitalize }}
+                    </h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tbody>
+                            {% for joint in ['shoulder', 'elbow', 'wrist', 'knee', 'ankle'] %}
+                            {% if phase.angles.get(joint) is not none %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 0.4rem 0; text-transform: capitalize; font-weight: 600; color: var(--text-muted); font-size: 0.9rem;">{{ joint }}</td>
+                                <td style="padding: 0.4rem 0; text-align: right; font-weight: 800; color: var(--text-main); font-size: 1rem;">{{ phase.angles[joint] }}°</td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if phase.notes %}
+                    <p style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; font-style: italic;">{{ phase.notes }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No reference player configured -->
+    <div class="card" style="text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;">🏸</div>
+        <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">No Reference Player Configured</h3>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+            The system will automatically seed reference data from An Se-young on the next startup.
+            Make sure <code>reference_data/an_seyoung.json</code> exists.
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    // Shot tab switching
+    function showShotData(shotType) {
+        // Hide all panels
+        document.querySelectorAll('.shot-panel').forEach(p => p.style.display = 'none');
+        // Deactivate all tabs
+        document.querySelectorAll('.shot-tab-btn').forEach(b => {
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-main)';
+            b.style.borderColor = 'var(--border)';
+        });
+        // Show selected panel
+        const panel = document.getElementById('panel-' + shotType);
+        if (panel) panel.style.display = 'block';
+        // Activate selected tab
+        const btn = document.querySelector('.shot-tab-btn[data-shot="' + shotType + '"]');
+        if (btn) {
+            btn.style.background = 'linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue))';
+            btn.style.color = 'white';
+            btn.style.borderColor = 'transparent';
+        }
+    }
+
+    // Default to first shot type or recently uploaded
+    window.addEventListener('load', () => {
+        let savedTab = sessionStorage.getItem('activeShotTab');
+        if (savedTab && document.querySelector('.shot-tab-btn[data-shot="' + savedTab + '"]')) {
+            showShotData(savedTab);
+            sessionStorage.removeItem('activeShotTab'); // clear it
+            // Scroll to the data
+            document.getElementById('reference-data-section').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            const firstBtn = document.querySelector('.shot-tab-btn');
+            if (firstBtn) showShotData(firstBtn.dataset.shot);
+        }
+    });
+</script>
+{% endblock %}

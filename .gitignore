@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+instance/
+uploads/*
+processed/*
+*.pyc
+.env
+
+# Keep the directories but not their contents
+!uploads/.gitkeep
+!processed/.gitkeep
+
+# Ignore machine learning model weights
+*.pt

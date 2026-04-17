@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin-bottom: 0.25rem;">Athlete Vision Report</h2>
+            <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0; font-weight: 600;">
+                <span style="color: var(--text-main);">Athlete:</span> <span style="color: var(--accent-cyan); text-transform: capitalize;">{{ current_user.username }}</span> &nbsp;|&nbsp; 
+                <span style="color: var(--text-main);">Sport:</span> <span style="color: var(--accent-pink); text-transform: capitalize;">{{ current_user.sport or 'Badminton' }}</span> &nbsp;|&nbsp;
+                <span style="color: var(--text-main);">Date:</span> {{ record.upload_date.strftime('%b %d, %Y') }}
+            </p>
+        </div>
+        <div id="action-buttons" style="display: flex; gap: 1rem; align-items: center;">
+            <button onclick="downloadReport()" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-neon-blue), var(--accent-cyan)); border: none;"><i class="fas fa-download"></i> Save PDF Report</button>
+            <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- ═══════════ 1. VIDEO COMPARISON (MAIN FOCUS) ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        {% if record.snapshot_path and '|' in record.snapshot_path %}
+            {% set snap_parts = record.snapshot_path.split('|') %}
+            {% set vid_parts = record.processed_video_path.split('|') if record.processed_video_path and '|' in record.processed_video_path else [record.processed_video_path, record.processed_video_path] %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; align-items: start;">
+                {% set times = record.worst_timestamp.split('|') if record.worst_timestamp and '|' in record.worst_timestamp else [record.worst_timestamp, record.worst_timestamp] %}
+                
+                <!-- Best Shot -->
+                <div style="text-align: center;">
+                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Best Shot</h3>
+                    <video id="vid-best" class="screen-only" controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(255,255,255,0.1);">
+                        {% if vid_parts and vid_parts[0] %}
+                        <source src="{{ url_for('serve_processed_video', filename=vid_parts[0]) }}" type="video/mp4">
+                        {% endif %}
+                    </video>
+                    {% if snap_parts and snap_parts[0] %}
+                    <img class="pdf-snapshot" src="{{ url_for('serve_processed_video', filename=snap_parts[0]) }}" style="width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); display: none;">
+                    {% endif %}
+                    
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); border-radius: 8px; text-align: left;">
+                        <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                            <strong style="color: #22c55e;">✅ Good Form</strong> — Your body alignment and joint angles were at their best during this moment.
+                            {% if record.shot_type %}<br><strong>Shot Type:</strong> <span style="text-transform: capitalize; color: var(--text-main);">{{ record.shot_type }}</span>{% endif %}
+                            <br><strong>📍 In your raw video at:</strong> <span style="color: var(--text-main); font-weight: 800; font-size: 1.1rem;">{{ times[0] }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Improvement Shot -->
+                <div style="text-align: center;">
+                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Improvement Shot</h3>
+                    <video id="vid-worst" class="screen-only" controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(255,255,255,0.1);">
+                        {% if vid_parts and vid_parts|length > 1 and vid_parts[1] %}
+                        <source src="{{ url_for('serve_processed_video', filename=vid_parts[1]) }}" type="video/mp4">
+                        {% endif %}
+                    </video>
+                    {% if snap_parts and snap_parts|length > 1 and snap_parts[1] %}
+                    <img class="pdf-snapshot" src="{{ url_for('serve_processed_video', filename=snap_parts[1]) }}" style="width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); display: none;">
+                    {% endif %}
+                    
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); border-radius: 8px; text-align: left;">
+                        <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                            {% if comparison and comparison.get('weaknesses') and comparison.weaknesses|length > 0 %}
+                                <strong style="color: #ef4444;">⚠️ Needs Work</strong> — 
+                                Your <strong style="text-transform: capitalize;">{{ comparison.weaknesses[0].joint }}</strong> angle is off by <strong style="color: #ef4444;">{{ "%.1f"|format(comparison.weaknesses[0].deviation) }}°</strong>.
+                                {% if comparison.weaknesses|length > 1 %}
+                                <br>Also check your <strong style="text-transform: capitalize;">{{ comparison.weaknesses[1].joint }}</strong> (off by {{ "%.1f"|format(comparison.weaknesses[1].deviation) }}°).
+                                {% endif %}
+                            {% else %}
+                                <strong style="color: #ef4444;">⚠️ Needs Work</strong> — Compare the pose lines here with the Best Shot to spot differences in your form.
+                            {% endif %}
+                            <br><strong>📍 In your raw video at:</strong> <span style="color: var(--text-main); font-weight: 800; font-size: 1.1rem;">{{ times[1] if times|length > 1 else times[0] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                // Slow playback for better analysis exactly as user likes smooth framerate reviewing
+                window.addEventListener('load', () => {
+                    let vb = document.getElementById('vid-best');
+                    let vw = document.getElementById('vid-worst');
+                    if(vb) vb.playbackRate = 0.5;
+                    if(vw) vw.playbackRate = 0.5;
+                });
+            </script>
+        {% else %}
+            <div style="text-align: center; color: var(--text-muted); padding: 3rem;">Videos Unavailable</div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════ 2. ATHLETE CONSISTENCY & STATS (PDF Request) ═══════════ -->
+    <div id="stats-section" class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.5rem;">📈 Athlete Consistency</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+            <!-- Metrics Column -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: rgba(34,197,94,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(34,197,94,0.2);">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Skill Level</p>
+                    <p style="font-weight: 800; font-size: 1.4rem; color: #22c55e; margin: 0;">
+                        {% if avg_similarity >= 85 %}👑 Pro{% elif avg_similarity >= 70 %}⭐ Advanced{% elif avg_similarity >= 50 %}📈 Intermediate{% else %}🌱 Beginner{% endif %}
+                    </p>
+                </div>
+                
+                <div style="background: rgba(245,158,11,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(245,158,11,0.2);">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Training Streak</p>
+                    <p style="font-weight: 800; font-size: 1.4rem; color: #f59e0b; margin: 0;">🔥 {{ streak }} day{{ 's' if streak != 1 else '' }}</p>
+                </div>
+                
+                <div style="background: rgba(14,165,233,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(14,165,233,0.2);">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Avg Similarity</p>
+                    <p style="font-weight: 800; font-size: 1.4rem; color: #0ea5e9; margin: 0;">{{ avg_similarity }}% match</p>
+                </div>
+            </div>
+            
+            <!-- Chart Column -->
+            <div style="height: 250px;">
+                <canvas id="consistencyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- ═══════════ 3. RADAR CHART + ANGLE TABLE ═══════════ -->
+    {% if comparison and comparison.get('has_reference') and comparison.get('joint_diffs') %}
+    <div id="radar-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Radar Chart -->
+        <div class="card animate-fade-in-up" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.3rem; text-align: center;">📊 Biomechanical Radar</h3>
+            <div style="width: 100%; max-width: 380px; aspect-ratio: 1;">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div style="display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; font-weight: 600;">
+                <span style="display: flex; align-items: center; gap: 0.4rem;"><span style="width: 12px; height: 12px; border-radius: 3px; background: rgba(14,165,233,0.7);"></span> You</span>
+                <span style="display: flex; align-items: center; gap: 0.4rem;"><span style="width: 12px; height: 12px; border-radius: 3px; background: rgba(236,72,153,0.7);"></span> {{ comparison.reference_player or 'Pro' }}</span>
+            </div>
+        </div>
+
+        <!-- Angle Difference Table -->
+        <div class="card animate-fade-in-up">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.3rem;">📐 Angle Discrepancies</h3>
+            <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                <thead>
+                    <tr style="text-align: left;">
+                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">Joint</th>
+                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-align: center;">You</th>
+                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--accent-pink); font-size: 0.85rem; font-weight: 700; text-align: center;">Pro</th>
+                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-align: center;">Δ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for joint, data in comparison.joint_diffs.items() %}
+                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
+                        <td style="padding: 0.7rem 0.5rem; font-weight: 700; text-transform: capitalize; color: var(--text-main);">
+                            {% if joint == 'shoulder' %}💪{% elif joint == 'elbow' %}🦾{% elif joint == 'wrist' %}🤚{% elif joint == 'knee' %}🦵{% else %}🦶{% endif %}
+                            {{ joint }}
+                        </td>
+                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 700; color: var(--text-main);">{{ data.user }}°</td>
+                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 700; color: var(--accent-pink);">{{ data.reference }}°</td>
+                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 800; font-size: 1rem;
+                            color: {% if data.abs_difference <= 5 %}#22c55e{% elif data.abs_difference <= 15 %}#eab308{% else %}#ef4444{% endif %};">
+                            {% if data.difference > 0 %}+{% endif %}{{ data.difference }}°
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if comparison.get('weaknesses') %}
+            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(239,68,68,0.04); border-radius: 10px; border: 1px solid rgba(239,68,68,0.1);">
+                <h4 style="color: #ef4444; margin-bottom: 0.5rem; font-size: 0.95rem;">⚠️ Priority Fixes</h4>
+                {% for w in comparison.weaknesses[:3] %}
+                <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.25rem;">
+                    <strong style="text-transform: capitalize;">{{ w.joint }}</strong>: off by <strong style="color: #ef4444;">{{ "%.1f"|format(w.deviation) }}°</strong>
+                </p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════ 4. TECHNIQUE REFERENCE vs YOUR RAW VIDEO ═══════════ -->
+    <div id="technique-section" class="card animate-fade-in-up screen-only" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.5rem;">📸 Correct Technique vs Your Footage</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; align-items: start;">
+            
+            <!-- LEFT: YouTube Tutorial (rotates between 4 videos per category) -->
+            <div style="text-align: center;">
+                <h4 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent-cyan); font-weight: 700;">Pro Reference</h4>
+                
+                {% set elbow_videos = ['H7kpZ9inc10', 'fhCRxZYGD-0', 'vGD-VU0sAc8', 'DWsHRZFTqtk'] %}
+                {% set shoulder_videos = ['CsVJ5A1SwIg', 'vqZ7A9mp1ds', 'rX0DIh7siO8', 'xRv1JLg4NMM'] %}
+                {% set knee_videos = ['TRd7Dz3MliE', '3bOJvDJg_TQ', 'IB4cJxvfXtI', 'hAD4qe9DtwU'] %}
+                {% set general_videos = ['4xdKCDccJW8', 'DxoPYeNIFYE', '33XM2gMTqLw', 'aqiRO_8A9jo'] %}
+                
+                {% set vid_index = record.id % 4 %}
+                
+                {% if 'Elbow' in record.feedback_text or 'elbow' in record.feedback_text|lower or 'arm' in record.feedback_text|lower %}
+                    {% set yt_id = elbow_videos[vid_index] %}
+                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
+                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch this pro elbow/arm technique breakdown. <strong>Compare your arm extension!</strong></p>
+
+                {% elif 'Shoulder' in record.feedback_text or 'shoulder' in record.feedback_text|lower or 'rotation' in record.feedback_text|lower %}
+                    {% set yt_id = shoulder_videos[vid_index] %}
+                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
+                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch how to rotate shoulders into the shot. <strong>Compare your torso twist!</strong></p>
+
+                {% elif 'Knee' in record.feedback_text or 'knee' in record.feedback_text|lower or 'leg' in record.feedback_text|lower %}
+                    {% set yt_id = knee_videos[vid_index] %}
+                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
+                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch explosive knee bends and footwork. <strong>Compare your stance!</strong></p>
+
+                {% else %}
+                    {% set yt_id = general_videos[vid_index] %}
+                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-neon-green); box-shadow: 0 8px 30px rgba(34,197,94,0.2);"></iframe>
+                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Your form is excellent! Practice these advanced techniques.</p>
+                {% endif %}
+            </div>
+            
+            <!-- RIGHT: User's Raw Video -->
+            <div style="text-align: center;">
+                <h4 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent-pink); font-weight: 700;">Your Raw Footage</h4>
+                <video controls loop muted playsinline style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-pink); box-shadow: 0 8px 30px rgba(236,72,153,0.2); background: #000; object-fit: contain;">
+                    <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
+                    <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
+                    Your browser does not support the video tag.
+                </video>
+                <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Your original uploaded video. <strong>Compare side-by-side with the pro!</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ 5. IMPROVEMENT TIPS SECTION ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h3 style="margin: 0; color: var(--text-main); font-size: 1.5rem;">💡 Improvement Tips</h3>
+            <button onclick="playVoiceCoach()" id="voiceBtn" class="btn" style="background: rgba(14,165,233,0.1); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.5rem 1rem; font-size: 0.9rem;">
+                🔊 Listen to Coach
+            </button>
+        </div>
+
+        {% set feedback_parts = record.feedback_text.split('|') %}
+        
+        {% if feedback_parts|length == 6 %}
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Issue -->
+                <div style="background: rgba(239,68,68,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #ef4444;">
+                    <strong style="color: #ef4444; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Issue:</strong>
+                    {{ feedback_parts[0].split(':')[1] if ':' in feedback_parts[0] else feedback_parts[0] }}
+                </div>
+                <!-- Fix -->
+                <div style="background: rgba(34,197,94,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #22c55e;">
+                    <strong style="color: #22c55e; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Fix:</strong>
+                    {{ feedback_parts[1].split(':')[1] if ':' in feedback_parts[1] else feedback_parts[1] }}
+                </div>
+                <!-- Drill -->
+                <div style="background: rgba(236,72,153,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #ec4899;">
+                    <strong style="color: #ec4899; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Drill:</strong>
+                    {{ feedback_parts[3].split(':')[1] if ':' in feedback_parts[3] else feedback_parts[3] }}
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <!-- Cue -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <strong style="color: #8b5cf6; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Cue:</strong>
+                        {{ feedback_parts[4].split(':')[1] if ':' in feedback_parts[4] else feedback_parts[4] }}
+                    </div>
+                    <!-- Checkpoint -->
+                    <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <strong style="color: #f59e0b; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Checkpoint:</strong>
+                        {{ feedback_parts[5].split(':')[1] if ':' in feedback_parts[5] else feedback_parts[5] }}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- Fallback for older analysis versions -->
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                <p>{{ record.feedback_text }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Level -->
+        <div style="margin-top: 1.5rem; background: rgba(14, 165, 233, 0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid rgba(14, 165, 233, 0.2); display: flex; align-items: center; justify-content: space-between;">
+            <strong style="color: var(--text-muted); font-size: 1.1rem;">Level:</strong>
+            <div style="font-size: 1.3rem; font-weight: 800;">
+                {% if record.performance_score >= 80 %}
+                    <span style="color: #22c55e;">Advanced</span>
+                {% elif record.performance_score >= 60 %}
+                    <span style="color: #eab308;">Intermediate</span>
+                {% else %}
+                    <span style="color: #ef4444;">Beginner</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn" style="width: 100%; font-size: 1.2rem; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; display: inline-block;">🔁 Analyze New Shot</a>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ RADAR CHART SCRIPT ═══════════ -->
+{% if comparison and comparison.get('has_reference') and comparison.get('joint_diffs') %}
+<script>
+    const radarCtx = document.getElementById('radarChart').getContext('2d');
+    
+    const joints = {{ comparison.joint_diffs.keys()|list|tojson|safe }};
+    const userAngles = [{% for j, d in comparison.joint_diffs.items() %}{{ d.user }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const refAngles = [{% for j, d in comparison.joint_diffs.items() %}{{ d.reference }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    // Capitalize labels
+    const labels = joints.map(j => j.charAt(0).toUpperCase() + j.slice(1));
+    
+    new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'You',
+                    data: userAngles,
+                    backgroundColor: 'rgba(14, 165, 233, 0.15)',
+                    borderColor: 'rgba(14, 165, 233, 0.8)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#0ea5e9',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                },
+                {
+                    label: '{{ comparison.reference_player or "Pro" }}',
+                    data: refAngles,
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    borderColor: 'rgba(236, 72, 153, 0.7)',
+                    borderWidth: 2.5,
+                    pointBackgroundColor: '#ec4899',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    borderDash: [5, 3],
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 180,
+                    ticks: {
+                        stepSize: 30,
+                        backdropColor: 'transparent',
+                        color: '#a3bfdb',
+                        font: { size: 10 }
+                    },
+                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                    pointLabels: {
+                        color: '#ffffff',
+                        font: { size: 13, weight: '700' }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(22, 45, 74, 0.95)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#a3bfdb',
+                    borderColor: 'rgba(0, 212, 255, 0.2)',
+                    borderWidth: 1,
+                    titleFont: { size: 13, weight: '700' },
+                    bodyFont: { size: 12 },
+                    padding: 12,
+                    cornerRadius: 10,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + ctx.parsed.r + '°';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    // Consistency Chart Logic
+    const perfData = {{ chart_data | tojson | safe }};
+    const cCtx = document.getElementById('consistencyChart');
+    if (cCtx) {
+        new Chart(cCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels | tojson | safe }},
+                datasets: [{
+                    label: 'Performance Score',
+                    data: perfData,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#22c55e',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 100, ticks: { color: '#a3bfdb' }, grid: { color: 'rgba(255, 255, 255, 0.06)' } },
+                    x: { ticks: { color: '#a3bfdb' }, grid: { display: false } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // PDF Report Generator
+    function downloadReport() {
+        // Hide elements the user DOES NOT want in the custom PDF request
+        const actionBtns = document.getElementById('action-buttons');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const videoSection = document.getElementById('vid-best')?.closest('.card'); // 1. VIDEO COMPARISON
+        const techSection = document.getElementById('technique-section'); // 4. REF VIDEO
+        
+        // Grab the tips card using a reliable JS array filter instead of jQuery pseudo-selectors
+        const tipsCards = Array.from(document.querySelectorAll('.card')).filter(el => el.innerHTML.includes('Improvement Tips'));
+        
+        if (actionBtns) actionBtns.style.display = 'none';
+        if (voiceBtn) voiceBtn.style.display = 'none';
+        if (videoSection) videoSection.style.display = 'none';
+        if (techSection) techSection.style.display = 'none';
+        tipsCards.forEach(el => el.style.display = 'none');
+        
+        const element = document.querySelector('.fade-in');
+        const opt = {
+            margin:       [5, 5, 5, 5],
+            filename:     'AthleteVision_Report.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 1.5, useCORS: true, backgroundColor: '#1e3a5f' },
+            jsPDF:        { unit: 'mm', format: 'a3', orientation: 'portrait' },
+            pagebreak:    { mode: 'avoid-all' }
+        };
+        
+        html2pdf().set(opt).from(element).save().then(() => {
+            // Restore elements
+            if (actionBtns) actionBtns.style.display = '';
+            if (voiceBtn) voiceBtn.style.display = '';
+            if (videoSection) videoSection.style.display = '';
+            if (techSection) techSection.style.display = '';
+            tipsCards.forEach(el => el.style.display = '');
+        });
+    }
+
+    // AI Voice Coach using Web Speech API
+    let isPlaying = false;
+    function playVoiceCoach() {
+        if (isPlaying) {
+            window.speechSynthesis.cancel();
+            document.getElementById('voiceBtn').innerHTML = '🔊 Listen to Coach';
+            isPlaying = false;
+            return;
+        }
+        
+        const tipsText = `
+            Here is your AI Coach Insight. 
+            Issue: {{ feedback_parts[0].split(':')[1] if feedback_parts and feedback_parts|length > 0 and ':' in feedback_parts[0] else (feedback_parts[0] if feedback_parts else "") }}.
+            Fix: {{ feedback_parts[1].split(':')[1] if feedback_parts and feedback_parts|length > 1 and ':' in feedback_parts[1] else (feedback_parts[1] if feedback_parts and feedback_parts|length > 1 else "") }}.
+            Why this matters: {{ feedback_parts[2].split(':')[1] if feedback_parts and feedback_parts|length > 2 and ':' in feedback_parts[2] else (feedback_parts[2] if feedback_parts and feedback_parts|length > 2 else "") }}.
+            Try this drill: {{ feedback_parts[3].split(':')[1] if feedback_parts and feedback_parts|length > 3 and ':' in feedback_parts[3] else (feedback_parts[3] if feedback_parts and feedback_parts|length > 3 else "") }}.
+        `;
+        
+        const utterance = new SpeechSynthesisUtterance(tipsText);
+        utterance.rate = 0.95; // Slightly slower for clarity
+        utterance.pitch = 1.05; // Slightly energetic
+        
+        utterance.onend = () => {
+            document.getElementById('voiceBtn').innerHTML = '🔊 Listen to Coach';
+            isPlaying = false;
+        };
+        
+        window.speechSynthesis.speak(utterance);
+        document.getElementById('voiceBtn').innerHTML = '⏹️ Stop Coach';
+        isPlaying = true;
+    }
+</script>
+
+{% endblock %}

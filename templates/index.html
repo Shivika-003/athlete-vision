@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center animate-fade-in-up" style="margin-top: 5rem; margin-bottom: 7rem;">
+    <h1 style="font-size: 4.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;">
+        Elite Badminton <br/>
+        <span style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Coaching</span>
+    </h1>
+    <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 600px; margin: 0 auto 3rem auto; line-height: 1.6;">
+        Transform your game with professional-grade biomechanical tracking. Compare your swing to elite players and get actionable insights instantly.
+    </p>
+    <a href="{{ url_for('register') }}" class="btn animate-glow" style="font-size: 1.2rem; padding: 1rem 2.5rem; border-radius: 50px;">Start Analyzing &rarr;</a>
+</section>
+
+<!-- Features Section -->
+<section class="features-section animate-fade-in-up" style="animation-delay: 0.6s;">
+    <h2 class="text-center" style="font-size: 2.5rem; margin-bottom: 3rem; font-weight: 800;">
+        Why <span style="color: var(--accent-cyan);">Athlete Vision?</span>
+    </h2>
+    <div class="dashboard-grid">
+        <!-- Feature 1 -->
+        <div class="card text-center">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-main);">3D Biomechanical Tracking</h3>
+            <p style="color: var(--text-muted); line-height: 1.5;">
+                Our proprietary AI analyzes joints, angles, and velocities in 3D space to isolate the root cause of errors in your stroke.
+            </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="card text-center">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-main);">Pro Comparisons</h3>
+            <p style="color: var(--text-muted); line-height: 1.5;">
+                Side-by-side overlays compare your biomechanics directly against elite references like An Se-young to find the gap in performance.
+            </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="card text-center">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--text-main);">Actionable Insights</h3>
+            <p style="color: var(--text-muted); line-height: 1.5;">
+                Get personalized coaching drills, similarity scores, and detailed progress tracking over time to guarantee improvement.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Visuals / Trust Section -->
+<section class="visuals-section animate-fade-in-up text-center" style="margin-top: 7rem; margin-bottom: 3rem; animation-delay: 0.9s;">
+    <div class="card" style="padding: 4rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9)); border: 1px solid var(--accent-cyan);">
+        <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Ready to level up your training?</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Join athletes around the world using AI to perfect their technique.</p>
+        <a href="{{ url_for('register') }}" class="btn btn-pink" style="font-size: 1.1rem; padding: 0.8rem 2rem;">Create Free Account</a>
+    </div>
+</section>
+{% endblock %}
