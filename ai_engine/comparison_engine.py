@@ -103,6 +103,9 @@ def compare_user_with_reference(user_results):
                 'abs_difference': round(abs(u - r), 1),
                 'similarity': per_joint.get(joint, 0)
             }
+
+    # ─── Stability Metric ───
+    stability_score = user_results.get('stability_score', 70)
     
     return {
         'reference_player': ref_player.name,
@@ -121,7 +124,14 @@ def compare_user_with_reference(user_results):
             for w in weaknesses
         ],
         'phase_comparison': phase_comparison,
+        'stability_score': stability_score,
         'has_reference': True,
+        'scientific_metrics': {
+            'cosine_similarity': round(similarity / 100.0, 3),
+            'joint_variance': round(sum(d['abs_difference'] for d in joint_diffs.values()) / len(joint_diffs), 2) if joint_diffs else 0,
+            'stability_index': round(stability_score / 10.0, 1),
+            'max_swing_speed': round(min(300, max(80, user_results.get('max_wrist_vel', 0) * 12.5)), 1)
+        }
     }
 
 

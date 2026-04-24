@@ -224,61 +224,74 @@ def calculate_all_angles(landmarks, side='right'):
 
 
 # =====================================================================
-# EXPONENTIAL MOVING AVERAGE (EMA) SMOOTHER
+# KALMAN FILTER SMOOTHER
 # =====================================================================
 
-class EMASmoother:
-    """Smooths joint angles across frames to reduce MediaPipe jitter.
+class KalmanSmoother:
+    """Smooths joint angles using a 1D Kalman Filter to predict motion and reduce jitter.
     
-    Uses Exponential Moving Average: smoothed = alpha * raw + (1 - alpha) * prev
-    Lower alpha = smoother (more lag), higher alpha = more responsive (less smooth)
-    
-    Usage:
-        smoother = EMASmoother(alpha=0.3)
-        smoothed_angles = smoother.smooth(raw_angles_dict)
+    This is highly superior to simple EMA for fast-moving joints (like wrists in badminton).
+    Uses a 2D state vector [angle, angular_velocity] for each joint.
     """
     
-    def __init__(self, alpha=0.35):
-        """Initialize smoother.
-        
-        Args:
-            alpha: Smoothing factor (0.0-1.0). 0.35 is a good balance
-                   between responsiveness and noise reduction.
-        """
-        self.alpha = alpha
-        self.prev = {}
+    def __init__(self, process_variance=1e-2, measurement_variance=0.08):
+        self.process_variance = process_variance
+        self.measurement_variance = measurement_variance
+        # State: dict of joint_name -> (x_matrix, P_matrix)
+        self.states = {}
     
     def smooth(self, angles_dict):
-        """Apply EMA smoothing to a dictionary of angle values.
-        
-        Args:
-            angles_dict: {'shoulder': 145.2, 'elbow': 162.3, ...}
-            
-        Returns:
-            Smoothed angles dictionary
-        """
+        """Apply Kalman filtering to a dictionary of angle values."""
         if angles_dict is None:
             return None
             
         smoothed = {}
         for joint_name, raw_value in angles_dict.items():
             if raw_value is None:
-                smoothed[joint_name] = self.prev.get(joint_name)
+                if joint_name in self.states:
+                    x, P = self.states[joint_name]
+                    # Predict only
+                    x[0] += x[1]
+                    P[0][0] += P[1][1] + self.process_variance
+                    P[1][1] += self.process_variance
+                    smoothed[joint_name] = round(x[0], 1)
+                else:
+                    smoothed[joint_name] = None
                 continue
                 
-            if joint_name not in self.prev:
+            if joint_name not in self.states:
+                # Initialize state: [angle, velocity] and Covariance matrix
+                self.states[joint_name] = (np.array([raw_value, 0.0]), np.eye(2))
                 smoothed[joint_name] = raw_value
             else:
-                smoothed[joint_name] = round(
-                    self.alpha * raw_value + (1 - self.alpha) * self.prev[joint_name], 1
-                )
-            self.prev[joint_name] = smoothed[joint_name]
+                x, P = self.states[joint_name]
+                
+                # 1. Predict
+                x_pred = np.array([x[0] + x[1], x[1]])
+                P_pred = np.array([
+                    [P[0][0] + P[0][1] + P[1][0] + P[1][1] + self.process_variance, P[0][1] + P[1][1]],
+                    [P[1][0] + P[1][1], P[1][1] + self.process_variance]
+                ])
+                
+                # 2. Update (Measurement H=[1, 0])
+                y = raw_value - x_pred[0] # Residual
+                S = P_pred[0][0] + self.measurement_variance # S = H*P*H' + R
+                K = np.array([P_pred[0][0] / S, P_pred[1][0] / S]) # Kalman Gain
+                
+                x_new = x_pred + K * y
+                P_new = np.array([
+                    [(1 - K[0]) * P_pred[0][0], (1 - K[0]) * P_pred[0][1]],
+                    [-K[1] * P_pred[0][0] + P_pred[1][0], -K[1] * P_pred[0][1] + P_pred[1][1]]
+                ])
+                
+                self.states[joint_name] = (x_new, P_new)
+                smoothed[joint_name] = round(x_new[0], 1)
         
         return smoothed
     
     def reset(self):
-        """Reset smoother state for a new video."""
-        self.prev = {}
+        """Reset state for a new video."""
+        self.states = {}
 
 
 # =====================================================================

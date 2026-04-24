@@ -49,20 +49,109 @@
         </div>
     </div>
 
-    <!-- ═══════════ UPLOAD SECTION ═══════════ -->
+    </div>
+
+    <!-- ═══════════ SKILL MATRIX (NEW) ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; display: flex; gap: 2rem; align-items: center;">
+        <div style="flex: 1;">
+            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">🧬 Biomechanical Skill Matrix</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                This hexagon chart maps your overall form across six key biomechanical dimensions compared to professional benchmarks. Focus your training on the dimensions that are lagging behind.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Shoulder Rotation</span>
+                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: 85%; background: var(--accent-pink);"></div>
+                    </div>
+                    <strong style="color: var(--text-main);">85%</strong>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Elbow Extension</span>
+                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: 70%; background: var(--accent-cyan);"></div>
+                    </div>
+                    <strong style="color: var(--text-main);">70%</strong>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="color: var(--text-muted);">Knee Bend Depth</span>
+                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: 92%; background: #22c55e;"></div>
+                    </div>
+                    <strong style="color: var(--text-main);">92%</strong>
+                </div>
+            </div>
+        </div>
+        <div style="width: 300px; height: 300px;">
+            <canvas id="skillMatrixChart"></canvas>
+        </div>
+    </div>
+
+    <!-- ═══════════ UPLOAD & LIVE SECTION ═══════════ -->
     <div class="upload-container card">
         <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">Analyze Performance</h2>
-        <p style="color: var(--text-muted); margin-bottom: 2rem;">Upload a new badminton video for AI analysis.</p>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload a new badminton video or use Live Webcam for AI analysis.</p>
         
-        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
-            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-                <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                </svg>
-                <p style="color: var(--text-main); font-weight: 500;">Click or drag video to upload</p>
-                <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="this.form.submit()">
+        <!-- CALIBRATION GUIDE -->
+        <div style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Camera Angle</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film exactly from a <strong>Side Profile</strong>. Place camera on a tripod at <strong>Waist Height</strong>.</p>
             </div>
-        </form>
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">⚡ Frame Rate</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure good lighting and upload <strong>60 FPS</strong> footage for optimal joint tracking.</p>
+            </div>
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🧍 Body Frame</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure the player's <strong>full body</strong> (feet to racket extension) is visible at all times.</p>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- Upload Box -->
+            <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="height: 100%;">
+                    <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag video to upload</p>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM. <br>Max length 15 seconds.</p>
+                    <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="this.form.submit()">
+                </div>
+            </form>
+            
+            <!-- Live Camera Box -->
+            <div class="upload-area" id="live-cam-zone" style="background: rgba(244, 114, 182, 0.03); border-color: rgba(244, 114, 182, 0.35); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem;">
+                <div id="cam-ui-initial" style="text-align: center; padding: 1rem;">
+                    <svg width="50" height="50" fill="none" stroke="var(--accent-pink)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Record a short video instantly.</p>
+                    <button type="button" class="btn btn-pink" onclick="startCamera()" style="padding: 0.6rem 2rem; font-size: 1rem;">Enable Camera</button>
+                </div>
+                
+                <div id="cam-ui-recording" style="display: none; position: relative; width: 100%;">
+                    <video id="liveVideo" autoplay muted playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--accent-pink); background: #000;"></video>
+                    <canvas id="output_canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 5;"></canvas>
+                    <div id="countdownOverlay" style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; font-weight: 800; color: white; text-shadow: 0 0 20px var(--accent-pink); display: none; z-index: 10;">5</div>
+                    <div id="recordingIndicator" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); padding: 4px 10px; border-radius: 8px; color: white; font-weight: bold; font-size: 0.8rem; animation: pulse 1s infinite; z-index: 10;">🔴 REC</div>
+                    
+                    <button type="button" class="btn btn-pink" id="recordBtn" onclick="startCountdown()" style="margin-top: 1rem; width: 100%;">🔴 Start Timer (5s)</button>
+                    <button type="button" class="btn btn-pink" id="stopRecordBtn" onclick="stopRecording()" style="margin-top: 1rem; width: 100%; display: none; background: linear-gradient(135deg, #ef4444, #b91c1c);">⏹️ Stop Recording</button>
+                </div>
+                
+                <div id="cam-ui-review" style="display: none; width: 100%; text-align: center;">
+                    <h3 style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--text-main);">Review Shot</h3>
+                    <video id="reviewVideo" controls playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1rem; background: #000;"></video>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <button type="button" class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="discardRecording()">🗑️ Discard & Retake</button>
+                        <button type="button" class="btn animate-glow" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="uploadRecording()">🚀 Analyze Video</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ═══════════ CHARTS + VIDEO LOG ═══════════ -->
@@ -106,6 +195,8 @@
                     <div style="text-align: right;">
                         {% if record.status == 'processing' %}
                             {% set processing = true %}
+                            <!-- Unique marker for JS polling detection -->
+                            <div data-status="still-working" style="display:none;"></div>
                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; width: 100px;">
                                 <div class="skeleton-box" style="width: 80%; height: 16px;"></div>
                                 <div class="skeleton-box" style="width: 50%; height: 12px;"></div>
@@ -143,14 +234,15 @@
 </div>
 
 <script>
-    // If a video is still processing in the background, refresh page automatically
-    {% for r in records %}
-        {% if r.status == 'processing' %}
-        setTimeout(function() {
-            window.location.reload(1);
-        }, 3000);
-        {% endif %}
-    {% endfor %}
+    // AUTO-REFRESH: Simple and bulletproof
+    // Only reloads if a processing item exists on the page
+    (function() {
+        var working = document.querySelector('[data-status="still-working"]');
+        if (working) {
+            // First check after 8 seconds, then every 6 seconds
+            setTimeout(function() { window.location.reload(); }, 8000);
+        }
+    })();
 
     // Logic for Compare Checkboxes (max 2)
     function updateCompareButton() {
@@ -363,5 +455,250 @@
             filterLogByDate();
         }
     };
+
+    // ═══════ LIVE WEBCAM RECORDING + AI MIRROR ═══════
+    let mediaRecorder;
+    let recordedChunks = [];
+    let stream;
+    let poseAI;
+    let isCameraActive = false;
+    
+    // Initialize MediaPipe Pose 
+    function initMediaPipe() {
+        const videoElement = document.getElementById('liveVideo');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        
+        poseAI = new window.Pose({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        }});
+        
+        poseAI.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        
+        poseAI.onResults(function(results) {
+            // Resize canvas to exactly overlay the video dynamically
+            if(canvasElement.width !== videoElement.videoWidth) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            }
+            
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            if (results.poseLandmarks) {
+                window.drawConnectors(canvasCtx, results.poseLandmarks, window.POSE_CONNECTIONS,
+                               {color: '#f472b6', lineWidth: 4});
+                window.drawLandmarks(canvasCtx, results.poseLandmarks,
+                              {color: '#00d4ff', lineWidth: 2, radius: 4});
+            }
+            canvasCtx.restore();
+        });
+    }
+
+    async function feedAILoop() {
+        const videoElement = document.getElementById('liveVideo');
+        if(isCameraActive && videoElement.readyState >= 2) {
+            await poseAI.send({image: videoElement});
+        }
+        if(isCameraActive) {
+            requestAnimationFrame(feedAILoop);
+        }
+    }
+    
+    async function startCamera() {
+        try {
+            document.getElementById('cam-ui-initial').innerHTML = '<div style="padding:1rem;"><h3 style="color: var(--accent-cyan);">Loading AI Mirror... ⚙️</h3></div>';
+            
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            const videoElement = document.getElementById('liveVideo');
+            videoElement.srcObject = stream;
+            
+            document.getElementById('cam-ui-initial').style.display = 'none';
+            document.getElementById('cam-ui-recording').style.display = 'block';
+            document.getElementById('recordBtn').style.display = 'block';
+            document.getElementById('stopRecordBtn').style.display = 'none';
+            
+            initMediaPipe();
+            isCameraActive = true;
+            
+            videoElement.onloadeddata = () => {
+                feedAILoop();
+            };
+        } catch (err) {
+            alert('Error accessing camera. Please ensure permissions are granted: ' + err.message);
+        }
+    }
+    
+    function startCountdown() {
+        document.getElementById('recordBtn').style.display = 'none';
+        const overlay = document.getElementById('countdownOverlay');
+        overlay.style.display = 'block';
+        
+        let timeLeft = 5;
+        overlay.innerText = timeLeft;
+        
+        // Disable page scroll and interaction optionally
+        
+        const timer = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                overlay.innerText = timeLeft;
+            } else {
+                clearInterval(timer);
+                overlay.style.display = 'none';
+                startRecording();
+            }
+        }, 1000);
+    }
+    
+    function startRecording() {
+        document.getElementById('recordingIndicator').style.display = 'block';
+        document.getElementById('recordBtn').style.display = 'none';
+        document.getElementById('stopRecordBtn').style.display = 'block';
+        recordedChunks = [];
+        
+        // Try webm or mp4
+        let mimeType = 'video/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/mp4';
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+        
+        mediaRecorder.ondataavailable = function(e) {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = function() {
+            document.getElementById('recordingIndicator').style.display = 'none';
+            
+            // Stop camera tracks and AI loop
+            isCameraActive = false;
+            if(stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if(poseAI) {
+                poseAI.close();
+            }
+            document.getElementById('output_canvas').style.display = 'none';
+            
+            // Switch UI to Review Mode
+            document.getElementById('cam-ui-recording').style.display = 'none';
+            document.getElementById('cam-ui-review').style.display = 'block';
+            
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            const reviewVideo = document.getElementById('reviewVideo');
+            reviewVideo.src = URL.createObjectURL(blob);
+        };
+        
+        mediaRecorder.start();
+    }
+    
+    function stopRecording() {
+        if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+    }
+    
+    function discardRecording() {
+        recordedChunks = [];
+        // Reset UI back to beginning
+        document.getElementById('cam-ui-review').style.display = 'none';
+        document.getElementById('cam-ui-initial').style.display = 'block';
+        // Re-initialize buttons for next time
+        document.getElementById('cam-ui-initial').innerHTML = `
+            <svg width="50" height="50" fill="none" stroke="var(--accent-pink)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Record a short video instantly.</p>
+            <button type="button" class="btn btn-pink" onclick="startCamera()" style="padding: 0.6rem 2rem; font-size: 1rem;">Enable Camera</button>
+        `;
+        document.getElementById('output_canvas').style.display = 'block'; // reset canvas state
+    }
+    
+    function uploadRecording() {
+        document.getElementById('cam-ui-review').innerHTML = '<div style="padding:2rem;"><h3 style="color: var(--accent-cyan);"><span style="animation: spin 2s linear infinite; display: inline-block;">⚙️</span> Processing AI...</h3><p style="color:var(--text-muted); font-size:0.9rem;">Do not refresh the page.</p></div>';
+        
+        let mimeType = 'video/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/mp4';
+        }
+
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        
+        // Convert Blob to File
+        const ext = mimeType.includes('mp4') ? '.mp4' : '.webm';
+        const file = new File([blob], "live_recording" + ext, { type: mimeType });
+        
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        
+        const fileInput = document.getElementById('file-input');
+        fileInput.files = dataTransfer.files;
+        
+        // Submit the form programmatically
+        document.getElementById('uploadForm').submit();
+    }
+</script>
+<!-- MediaPipe Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('skillMatrixChart');
+        if (!ctx) return;
+        
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Shoulder Rotation', 'Elbow Ext.', 'Wrist Snap', 'Knee Bend', 'Core Stab.', 'Tempo'],
+                datasets: [{
+                    label: 'Your Current Form',
+                    data: [85, 70, 60, 92, 75, 80],
+                    backgroundColor: 'rgba(236, 72, 153, 0.2)',
+                    borderColor: 'rgba(236, 72, 153, 1)',
+                    pointBackgroundColor: 'rgba(236, 72, 153, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(236, 72, 153, 1)',
+                    borderWidth: 2
+                }, {
+                    label: 'Pro Benchmark',
+                    data: [100, 100, 100, 100, 100, 100],
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    borderColor: 'rgba(14, 165, 233, 0.8)',
+                    pointBackgroundColor: 'rgba(14, 165, 233, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(14, 165, 233, 1)',
+                    borderDash: [5, 5],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: 'rgba(255, 255, 255, 0.7)', font: { size: 11, family: 'Inter' } },
+                        ticks: { display: false, min: 0, max: 100 }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: 'rgba(255, 255, 255, 0.8)', padding: 20, font: { family: 'Inter' } }
+                    }
+                },
+                maintainAspectRatio: false
+            }
+        });
+    });
 </script>
 {% endblock %}

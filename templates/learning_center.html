@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin-bottom: 0.25rem;">Badminton Learning Center</h2>
+            <p style="color: var(--text-muted);">Master professional techniques with AI-guided biomechanical insights.</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+    </div>
+
+    <!-- ═══════════ FEATURED MASTERCLASS ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 3rem; background: linear-gradient(135deg, rgba(14, 165, 233, 0.05), rgba(236, 72, 153, 0.05)); border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2.5rem; align-items: center;">
+            <div style="position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+                <iframe width="100%" style="aspect-ratio: 16/9;" src="https://www.youtube.com/embed/faG2NWIVM18" frameborder="0" allowfullscreen></iframe>
+                <div style="position: absolute; top: 1rem; left: 1rem; background: var(--accent-pink); color: white; padding: 0.4rem 1rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; letter-spacing: 1px;">FEATURED</div>
+            </div>
+            <div>
+                <h3 style="font-size: 2rem; margin-bottom: 1rem; color: var(--text-main);">The Anatomy of a Perfect Smash</h3>
+                <p style="color: var(--text-muted); line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem;">
+                    Learn the 4-phase biomechanical breakdown of the world's fastest overhead shot. 
+                    From the 'Mousetrap' wrist release to full kinetic chain engagement.
+                </p>
+                <div style="display: flex; gap: 1.5rem;">
+                    <div style="text-align: center;">
+                        <p style="font-size: 1.5rem; margin-bottom: 0.2rem;">⚡</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">POWER</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <p style="font-size: 1.5rem; margin-bottom: 0.2rem;">🎯</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">PRECISION</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <p style="font-size: 1.5rem; margin-bottom: 0.2rem;">🔄</p>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">RHYTHM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ TECHNIQUE LIBRARY ═══════════ -->
+    <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">Technique Library</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
+        
+        <!-- Smash -->
+        <div class="card technique-card" style="padding: 0; overflow: hidden;">
+            <div style="height: 180px; background: #000;">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/H7kpZ9inc10" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;">The Smash</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Master the downward power shot. Focus on shoulder rotation and high contact point.</p>
+                <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+                    <strong style="color: var(--accent-pink);">Pro Tip:</strong> Snap your wrist at the peak!
+                </div>
+            </div>
+        </div>
+
+        <!-- Clear -->
+        <div class="card technique-card" style="padding: 0; overflow: hidden;">
+            <div style="height: 180px; background: #000;">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/vGD-VU0sAc8" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;">The Clear</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">The defensive lob. Aim for the back baseline with full arm extension.</p>
+                <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+                    <strong style="color: var(--accent-cyan);">Pro Tip:</strong> Finish your swing across the body.
+                </div>
+            </div>
+        </div>
+
+        <!-- Drop -->
+        <div class="card technique-card" style="padding: 0; overflow: hidden;">
+            <div style="height: 180px; background: #000;">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/CsVJ5A1SwIg" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;">The Drop</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Deceptive slow shot. Use the same prep as a smash but soften the contact.</p>
+                <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+                    <strong style="color: var(--accent-neon-blue);">Pro Tip:</strong> Brush the shuttlecock for steepness.
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Shot -->
+        <div class="card technique-card" style="padding: 0; overflow: hidden;">
+            <div style="height: 180px; background: #000;">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/TRd7Dz3MliE" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div style="padding: 1.5rem;">
+                <h4 style="margin-bottom: 0.5rem;">The Net Shot</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Front court finesse. Control the height and tumble over the net cord.</p>
+                <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 8px; font-size: 0.85rem;">
+                    <strong style="color: #22c55e;">Pro Tip:</strong> Keep your arm relaxed and elbow high.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ BIOMECHANICAL CHECKPOINTS ═══════════ -->
+    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2.5rem; margin-bottom: 4rem;">
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">📐 Biomechanical Checkpoints</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                    <h5 style="color: var(--accent-cyan); margin-bottom: 0.75rem;">Phase 1: Preparation</h5>
+                    <ul style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; line-height: 1.6;">
+                        <li>Non-racket arm pointing at shuttle</li>
+                        <li>Shoulders perpendicular to net</li>
+                        <li>Weight on back foot</li>
+                        <li>Racket elbow at 90°</li>
+                    </ul>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                    <h5 style="color: var(--accent-pink); margin-bottom: 0.75rem;">Phase 2: Swing/Contact</h5>
+                    <ul style="color: var(--text-muted); font-size: 0.85rem; padding-left: 1.2rem; line-height: 1.6;">
+                        <li>Full elbow extension at contact</li>
+                        <li>Core rotation initiated</li>
+                        <li>Wrist snap (Pronation)</li>
+                        <li>High contact point (11 o'clock)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
+            <h3 style="margin-bottom: 1.5rem; color: #f59e0b;">🏋️ Training Drills</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #f59e0b; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">1</div>
+                    <div>
+                        <p style="font-weight: 700; margin-bottom: 0.2rem;">Shadow Badminton</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Perform 50 smashes without a shuttle. Record and upload for AI feedback.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #f59e0b; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">2</div>
+                    <div>
+                        <p style="font-weight: 700; margin-bottom: 0.2rem;">The Wall Drill</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Hit against a wall to improve drive speed and wrist strength.</p>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: flex-start;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #f59e0b; color: #000; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">3</div>
+                    <div>
+                        <p style="font-weight: 700; margin-bottom: 0.2rem;">Balance Hold</p>
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">Hold the 'Contact' pose for 5 seconds to build core stability.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .technique-card {
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    }
+    .technique-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0, 212, 255, 0.2);
+        border-color: var(--accent-cyan);
+    }
+</style>
+{% endblock %}

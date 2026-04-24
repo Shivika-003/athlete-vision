@@ -113,7 +113,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -212,6 +212,14 @@ def worker_process_video(record_id, app_instance, upload_path, processed_filenam
                 record.ankle_angle = contact_angles.get('ankle')
                 
                 # Store full comparison as JSON
+                comparison['automated_processing'] = {
+                    'best_chapters_file': results.get('best_chapters_file'),
+                    'worst_chapters_file': results.get('worst_chapters_file'),
+                    'best_shot_count': results.get('best_shot_count', 0),
+                    'worst_shot_count': results.get('worst_shot_count', 0),
+                    'best_duration_sec': results.get('best_duration_sec', 0.0),
+                    'worst_duration_sec': results.get('worst_duration_sec', 0.0)
+                }
                 comparison['feedback'] = feedback_data
                 record.comparison_details = serialize_comparison(comparison)
                 
@@ -406,11 +414,62 @@ def compare():
 def reference():
     """Display reference player info and angle data."""
     ref_player = get_active_reference_player()
+    all_players = ReferencePlayer.query.all()
     ref_data = {}
     if ref_player:
         ref_data = get_reference_summary(ref_player.id)
     
-    return render_template('reference.html', ref_player=ref_player, ref_data=ref_data)
+    return render_template('reference.html', ref_player=ref_player, all_players=all_players, ref_data=ref_data)
+
+@app.route('/learning')
+@login_required
+def learning_center():
+    """Display the learning center with tutorials and drills."""
+    return render_template('learning_center.html')
+
+@app.route('/reference/player/create', methods=['POST'])
+@login_required
+def create_reference_player():
+    name = request.form.get('name')
+    nationality = request.form.get('nationality')
+    hand = request.form.get('hand')
+    description = request.form.get('description')
+    
+    if not name:
+        flash('Player name is required.')
+        return redirect(url_for('reference'))
+        
+    # Set all existing players to inactive
+    ReferencePlayer.query.update({ReferencePlayer.is_active: False})
+    
+    new_player = ReferencePlayer(
+        name=name,
+        nationality=nationality,
+        hand=hand,
+        description=description,
+        sport='Badminton',
+        is_active=True
+    )
+    db.session.add(new_player)
+    db.session.commit()
+    
+    flash(f'Reference player "{name}" created and set as active!')
+    return redirect(url_for('reference'))
+
+@app.route('/reference/player/set_active/<int:player_id>', methods=['POST'])
+@login_required
+def set_active_reference_player(player_id):
+    player = ReferencePlayer.query.get_or_404(player_id)
+    
+    # Set all to inactive
+    ReferencePlayer.query.update({ReferencePlayer.is_active: False})
+    
+    # Set the selected player to active
+    player.is_active = True
+    db.session.commit()
+    
+    flash(f'Active reference player switched to "{player.name}".')
+    return redirect(url_for('reference'))
 
 @app.route('/reference/upload', methods=['POST'])
 @login_required

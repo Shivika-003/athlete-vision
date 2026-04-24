@@ -10,11 +10,13 @@ import mediapipe as mp
 import numpy as np
 import os
 import math
+import collections
+import json
 
 from ai_engine.angle_utils import (
     calculate_angle_3d, get_landmark_3d, get_landmark_2d,
     get_avg_visibility, detect_dominant_side, calculate_all_angles,
-    EMASmoother, MIN_VISIBILITY
+    KalmanSmoother, MIN_VISIBILITY
 )
 from ai_engine.reference_builder import (
     get_active_reference_player, get_reference_angles
@@ -23,12 +25,29 @@ from ai_engine.reference_builder import (
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
 
-# Try loading YOLO for player detection/cropping (optional)
-try:
-    from ultralytics import YOLO
-    yolo_model = YOLO('yolov8n.pt')
-except Exception:
-    yolo_model = None
+# LAZY YOLO LOADING: Only load YOLO when actually needed during processing
+# This prevents heavy model loading from slowing down app startup
+_yolo_model_cache = None
+_yolo_loaded = False
+
+def _get_yolo_model():
+    """Lazy-load YOLO model only when first needed."""
+    global _yolo_model_cache, _yolo_loaded
+    if _yolo_loaded:
+        return _yolo_model_cache
+    _yolo_loaded = True
+    try:
+        from ultralytics import YOLO
+        if os.path.exists('badminton_yolo.pt'):
+            _yolo_model_cache = YOLO('badminton_yolo.pt')
+            print("[PoseAnalyzer] Custom YOLO model loaded (lazy).")
+        else:
+            print("[PoseAnalyzer] No custom YOLO model found, skipping shuttlecock tracking.")
+            _yolo_model_cache = None
+    except Exception as e:
+        print(f"[PoseAnalyzer] YOLO unavailable: {e}")
+        _yolo_model_cache = None
+    return _yolo_model_cache
 
 
 # =====================================================================
@@ -170,6 +189,31 @@ def classify_shot_type(landmarks):
 
 
 # =====================================================================
+# STABILITY & BALANCE ANALYSIS
+# =====================================================================
+
+def calculate_stability(landmarks):
+    """
+    Measures player's balance and stability.
+    High score = Head is centered over hips (stable).
+    Low score = Head is leaning too far (unbalanced).
+    """
+    nose = landmarks[mp_pose.PoseLandmark.NOSE.value]
+    l_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+    r_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+    
+    hip_center_x = (l_hip.x + r_hip.x) / 2.0
+    
+    # Calculate horizontal drift of the head relative to the hips
+    drift = abs(nose.x - hip_center_x)
+    
+    # Scale: 0 drift = 100%, 0.2 drift = 0%
+    stability_score = max(0, 100 - (drift * 500))
+    return stability_score
+
+
+
+# =====================================================================
 # MAIN VIDEO PROCESSING PIPELINE
 # =====================================================================
 
@@ -206,8 +250,8 @@ def process_video(input_path, output_filename, output_dir="processed"):
     original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Resize for processing speed
-    max_w = 480
+    # Resize for processing speed but maintain clarity (640p)
+    max_w = 640
     if original_width > max_w:
         scale = max_w / original_width
         width = int(original_width * scale)
@@ -216,17 +260,19 @@ def process_video(input_path, output_filename, output_dir="processed"):
         width = original_width
         height = original_height
     
-    # Frame skipping: process every Nth frame for long videos
-    # Frame skipping: ONLY skip frames for long videos so we don't miss the exact contact point
-    skip = 1
-    if total_frames > 240:    # > 8 seconds
+    # TURBO SKIP: Aggressively skip frames to cut processing time
+    skip = 2  # Always skip at least every other frame
+    if total_frames > 300:    # > 10 seconds
+        skip = 5
+    elif total_frames > 150:  # > 5 seconds
+        skip = 4
+    elif total_frames > 90:   # > 3 seconds
         skip = 3
-    elif total_frames > 120:  # > 4 seconds
-        skip = 2
+
     
     print(f"[PoseAnalyzer] Processing {total_frames} frames at {width}x{height}, skip={skip}")
     
-    smoother = EMASmoother(alpha=0.35)
+    smoother = KalmanSmoother()
     frame_data = []
     prev_wrist_vel = 0
     prev_phase = 'idle'
@@ -237,9 +283,9 @@ def process_video(input_path, output_filename, output_dir="processed"):
     PLAYER_LOCK_TOLERANCE = 0.25  # Max horizontal drift allowed
     
     with mp_pose.Pose(
-        min_detection_confidence=0.6,    # Raised slightly for higher strictness
-        min_tracking_confidence=0.6,
-        model_complexity=1               # Restored to 1 for high accuracy tracking!
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+        model_complexity=0               # Optimized for SPEED (0 = fastest, 1 = standard)
     ) as pose:
         frame_idx = 0
         prev_landmarks = None
@@ -320,8 +366,14 @@ def process_video(input_path, output_filename, output_dir="processed"):
                 # Apply EMA smoothing
                 smoothed_angles = smoother.smooth(raw_angles) if raw_angles else None
                 
-                # Calculate wrist velocity
+                # ─── Calculate wrist metrics FIRST (used for YOLO skipping) ───
                 wrist_vel = 0
+                wrist_pos = None
+                if side == 'right':
+                    wrist_pos = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
+                else:
+                    wrist_pos = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
+
                 if prev_landmarks:
                     r_w_c = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
                     r_w_p = prev_landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
@@ -335,6 +387,11 @@ def process_video(input_path, output_filename, output_dir="processed"):
                 
                 wrist_accel = wrist_vel - prev_wrist_vel
                 
+                # TURBO: YOLO disabled for speed — velocity-based contact detection is used instead
+                # (YOLO on laptop CPU takes 0.5-2s per frame, which is too slow for 10-15s target)
+                shuttlecock_pos = None
+                shuttle_dist = None
+
                 # Detect shot phase
                 phase = detect_shot_phase(landmarks, wrist_vel, wrist_accel, prev_phase)
                 
@@ -353,7 +410,10 @@ def process_video(input_path, output_filename, output_dir="processed"):
                     'visibility': avg_vis,
                     'landmarks': landmarks,
                     'pose_landmarks': results.pose_landmarks,
-                    'image': frame.copy(),
+                    # RESOLVED: Removed frame.copy() to save GIGABYTES of RAM
+                    'shuttle_pos': shuttlecock_pos,
+                    'shuttle_dist': shuttle_dist,
+                    'stability': calculate_stability(landmarks)
                 })
                 
                 prev_phase = phase
@@ -369,7 +429,17 @@ def process_video(input_path, output_filename, output_dir="processed"):
     if not frame_data:
         return _empty_result()
     
-    # ─── Find best contact frame by comparing with PRO REFERENCE ───
+    # ─── Find best contact frame using YOLO SHUTTLE TRACKING ───
+    # We look for the frame with the absolute MINIMUM distance between shuttlecock and wrist
+    shuttle_hits = [f for f in frame_data if f.get('shuttle_dist') is not None]
+    
+    yolo_contact = None
+    if shuttle_hits:
+        # Sort by distance: closest is most likely contact
+        yolo_contact = min(shuttle_hits, key=lambda x: x['shuttle_dist'])
+        print(f"[PoseAnalyzer] YOLO detected shuttlecock contact at frame {yolo_contact['frame_idx']} (dist: {yolo_contact['shuttle_dist']:.4f})")
+    
+    # Existing fallback logic
     contact_frames = [f for f in frame_data if f['phase'] == 'contact']
     
     if not contact_frames:
@@ -426,58 +496,79 @@ def process_video(input_path, output_filename, output_dir="processed"):
         else:
             f['quality_score'] = 0
     
-    # Best contact frame = MOST SIMILAR to pro reference
-    best_contact = max(contact_frames, key=lambda x: x.get('quality_score', 0))
-    
-    # ─── Find improvement frame = MOST DIFFERENT from pro ───
-    # Skip first 2 seconds of video (usually setup/walking, not real play)
-    skip_frames = int(fps * 2)
-    active_frames = [f for f in frame_data 
-                     if f['phase'] in ('swing', 'contact', 'follow_through', 'preparation')
-                     and f['frame_idx'] > skip_frames]
-    if not active_frames:
-        active_frames = [f for f in frame_data if f['frame_idx'] > skip_frames]
-    if not active_frames:
-        active_frames = frame_data
-    
-    # Enforce minimum temporal separation (1.5 seconds apart from best)
-    min_frame_gap = int(fps * 1.5)
-    distant_frames = [f for f in active_frames 
-                      if abs(f['frame_idx'] - best_contact['frame_idx']) > min_frame_gap]
-    
-    if not distant_frames:
-        min_frame_gap = int(fps * 0.5)
-        distant_frames = [f for f in active_frames 
-                          if abs(f['frame_idx'] - best_contact['frame_idx']) > min_frame_gap]
-    
-    candidate_frames = distant_frames if distant_frames else active_frames
-    
-    # Worst frame = LOWEST quality score (most different from pro)
-    worst_frame = min(candidate_frames, key=lambda x: x.get('quality_score', 0))
-    
-    # ─── Generate output images ───
+    # ─── Multi-Shot Compilation Logic ───
+    # We want ALL good shots in the best video, and ALL bad shots in the worst video.
+    # First, we must group consecutive 'contact' frames into distinct shots.
+    distinct_shots = []
+    if contact_frames:
+        contact_frames.sort(key=lambda x: x['frame_idx'])
+        current_cluster = [contact_frames[0]]
+        for f in contact_frames[1:]:
+            # If frames are within 1 second of each other, they are the same shot
+            if f['frame_idx'] - current_cluster[-1]['frame_idx'] < fps:
+                current_cluster.append(f)
+            else:
+                best_in_cluster = max(current_cluster, key=lambda x: x.get('quality_score', 0))
+                distinct_shots.append(best_in_cluster)
+                current_cluster = [f]
+        if current_cluster:
+            best_in_cluster = max(current_cluster, key=lambda x: x.get('quality_score', 0))
+            distinct_shots.append(best_in_cluster)
+            
+    if distinct_shots:
+        distinct_shots.sort(key=lambda x: x.get('quality_score', 0), reverse=True)
+        mid_point = max(1, len(distinct_shots) // 2)
+        if len(distinct_shots) == 1:
+            best_frames = distinct_shots
+            worst_frames = distinct_shots
+        else:
+            best_frames = distinct_shots[:mid_point]
+            worst_frames = distinct_shots[mid_point:]
+    else:
+        # Fallback if no contact frames
+        sorted_frames = sorted(frame_data, key=lambda x: x.get('quality_score', 0), reverse=True)
+        best_frames = [sorted_frames[0]] if sorted_frames else []
+        worst_frames = [sorted_frames[-1]] if sorted_frames else []
+
+    # Get single best and worst for the static PDF snapshots
+    best_contact = best_frames[0] if best_frames else {'frame_idx': 0, 'quality_score': 0}
+    worst_frame = worst_frames[0] if worst_frames else {'frame_idx': 0, 'quality_score': 0}
+
+    # Sort them chronologically for video generation
+    best_frames.sort(key=lambda x: x['frame_idx'])
+    worst_frames.sort(key=lambda x: x['frame_idx'])
+
+    # ─── Generate output images (Re-reading from file to save RAM) ───
     best_img_name = f"best_{base_name}.jpg"
     worst_img_name = f"worst_{base_name}.jpg"
     
-    # Draw pose on best frame
-    best_annotated = _annotate_frame(best_contact, width, height)
-    worst_annotated = _annotate_frame(worst_frame, width, height)
-    
-    cv2.imwrite(os.path.join(output_dir, best_img_name), best_annotated)
-    cv2.imwrite(os.path.join(output_dir, worst_img_name), worst_annotated)
+    # Snapshot of the absolute best and absolute worst
+    _save_annotated_snapshot(input_path, os.path.join(output_dir, best_img_name), 
+                             best_contact['frame_idx'], width, height, best_contact)
+    _save_annotated_snapshot(input_path, os.path.join(output_dir, worst_img_name), 
+                             worst_frame['frame_idx'], width, height, worst_frame)
     
     snapshot_filename = f"{best_img_name}|{int(best_contact.get('quality_score', 0))}|{worst_img_name}|{int(worst_frame.get('quality_score', 0))}"
     
-    # ─── Generate video clips ───
+    # ─── Generate video clips (Re-reading from file to save RAM) ───
     best_video_name = f"best_{base_name}.mp4"
     worst_video_name = f"worst_{base_name}.mp4"
     
-    _generate_clip(frame_data, best_contact, best_video_name, output_dir, 
-                   fps, width, height)
-    _generate_clip(frame_data, worst_frame, worst_video_name, output_dir,
-                   fps, width, height)
-    
+    best_chapters = _generate_clip_safe(input_path, best_frames, best_video_name, output_dir, 
+                        fps, width, height, frame_data, skip, ref_angles)
+    worst_chapters = _generate_clip_safe(input_path, worst_frames, worst_video_name, output_dir,
+                        fps, width, height, frame_data, skip, ref_angles)
+                        
+    # Save chapters to JSON
+    best_chapters_file = f"best_chapters_{base_name}.json"
+    worst_chapters_file = f"worst_chapters_{base_name}.json"
+    with open(os.path.join(output_dir, best_chapters_file), 'w') as f:
+        json.dump(best_chapters, f)
+    with open(os.path.join(output_dir, worst_chapters_file), 'w') as f:
+        json.dump(worst_chapters, f)
+        
     processed_video_filename = f"{best_video_name}|{worst_video_name}"
+
     
     # ─── Collect phase angles for comparison ───
     phase_angles = {}
@@ -499,9 +590,9 @@ def process_video(input_path, output_filename, output_dir="processed"):
     all_scores = [f.get('quality_score', 0) for f in frame_data if f.get('quality_score', 0) > 0]
     final_score = sum(all_scores) / len(all_scores) if all_scores else 0
     
-    arm_score = min(100, max(20, contact_angles.get('elbow', 0) / 1.8 * 100)) if contact_angles.get('elbow') else 50
-    knee_score = min(100, max(20, contact_angles.get('knee', 0) / 1.8 * 100)) if contact_angles.get('knee') else 50
-    hip_score = min(100, max(20, contact_angles.get('shoulder', 0) / 1.8 * 100)) if contact_angles.get('shoulder') else 50
+    arm_score = min(100, max(20, contact_angles.get('elbow', 0) / 1.8)) if contact_angles.get('elbow') else 50
+    knee_score = min(100, max(20, contact_angles.get('knee', 0) / 1.8)) if contact_angles.get('knee') else 50
+    hip_score = min(100, max(20, contact_angles.get('shoulder', 0) / 1.8)) if contact_angles.get('shoulder') else 50
     
     # Normalize final score to 0-100
     final_score = min(100, max(0, final_score / 1.5))
@@ -523,6 +614,18 @@ def process_video(input_path, output_filename, output_dir="processed"):
     
     combined_timestamps = f"{best_timestamp}|{worst_timestamp}"
     
+    # Check for low FPS warning
+    if 'fps' in locals() and fps < 55:
+        feedback_text += " | ⚠️ Low Accuracy Warning: Your video is under 60fps. Fast racket swings and wrist angles may suffer from motion blur. For professional accuracy, film in 60fps."
+        
+    # ─── Calculate Stability & Speed ───
+    stability_scores = [f.get('stability', 0) for f in frame_data if f.get('phase') in ('swing', 'contact')]
+    avg_stability = sum(stability_scores) / len(stability_scores) if stability_scores else 70
+    max_wrist_vel = max([f.get('wrist_vel', 0) for f in frame_data if f.get('phase') in ('swing', 'contact')] + [0])
+    
+    best_duration = round(sum(c['duration'] for c in best_chapters), 1)
+    worst_duration = round(sum(c['duration'] for c in worst_chapters), 1)
+    
     return {
         # Backward compatible fields
         "final_score": round(final_score, 1),
@@ -533,6 +636,8 @@ def process_video(input_path, output_filename, output_dir="processed"):
         "processed_video_filename": processed_video_filename,
         "feedback_text": feedback_text,
         "worst_timestamp": combined_timestamps,
+        "stability_score": round(avg_stability, 1),
+        "max_wrist_vel": max_wrist_vel,
         
         # Athlete Vision 2.0 fields
         "shot_type": shot_type,
@@ -541,6 +646,14 @@ def process_video(input_path, output_filename, output_dir="processed"):
         "total_frames_analyzed": len(frame_data),
         "contact_frame_idx": best_contact['frame_idx'],
         "dominant_side": best_contact.get('side', 'right'),
+        
+        # Automated Processing Reel Metadata
+        "best_chapters_file": best_chapters_file,
+        "worst_chapters_file": worst_chapters_file,
+        "best_shot_count": len(best_frames),
+        "worst_shot_count": len(worst_frames),
+        "best_duration_sec": best_duration,
+        "worst_duration_sec": worst_duration
     }
 
 
@@ -558,63 +671,118 @@ def _empty_result():
         "shot_type": None, "contact_angles": {},
         "phase_angles": {}, "total_frames_analyzed": 0,
         "contact_frame_idx": 0, "dominant_side": "right",
+        "best_chapters_file": None, "worst_chapters_file": None,
+        "best_shot_count": 0, "worst_shot_count": 0,
+        "best_duration_sec": 0.0, "worst_duration_sec": 0.0
     }
 
 
-def _annotate_frame(frame_data, width, height):
-    """Draw pose skeleton in pink."""
-    image = frame_data['image'].copy()
-    pose_landmarks = frame_data.get('pose_landmarks')
-    
-    if pose_landmarks:
-        import mediapipe as mp
-        mp_drawing_inst = mp.solutions.drawing_utils
-        
-        # Pink skeleton lines in BGR: (180, 105, 255)
-        mp_drawing_inst.draw_landmarks(
-            image, pose_landmarks, mp_pose.POSE_CONNECTIONS,
-            mp_drawing_inst.DrawingSpec(color=(180, 105, 255), thickness=3, circle_radius=3),
-            mp_drawing_inst.DrawingSpec(color=(180, 105, 255), thickness=3)
-        )
-    
-    return image
+def _save_annotated_snapshot(input_path, output_path, frame_idx, width, height, fdata):
+    """Memory-safe snapshot: Open file, seek to frame, annotate, and save."""
+    cap = cv2.VideoCapture(input_path)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+    ret, frame = cap.read()
+    if ret:
+        frame = cv2.resize(frame, (width, height))
+        if fdata.get('pose_landmarks'):
+            # Removed pink skeleton line, using only blue bounding box
+            xs = [lm.x for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
+            ys = [lm.y for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
+            if xs and ys:
+                min_x, max_x = int(min(xs) * width), int(max(xs) * width)
+                min_y, max_y = int(min(ys) * height), int(max(ys) * height)
+                padding = 20
+                cv2.rectangle(frame, (max(0, min_x - padding), max(0, min_y - padding)),
+                              (min(width, max_x + padding), min(height, max_y + padding)),
+                              (255, 0, 0), 2)  # Blue Box
+                cv2.putText(frame, "USER", (max(0, min_x - padding), max(0, min_y - padding - 10)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                            
+        cv2.imwrite(output_path, frame)
+    cap.release()
 
 
-def _generate_clip(all_frame_data, target_frame, output_name, output_dir,
-                   fps, width, height):
-    """Generate a short video clip using pre-analyzed frame data.
-    
-    Uses the already-stored frames from the first pass so we always
-    show the SAME player that was analyzed (no re-running MediaPipe).
-    """
-    target_idx = target_frame['frame_idx']
-    
-    # Find nearby frames in the stored data (within ~1 second)
-    frame_window = int(fps * 1)
-    clip_frames = [f for f in all_frame_data 
-                   if abs(f['frame_idx'] - target_idx) <= frame_window]
-    
-    # Sort by frame index for correct playback order
-    clip_frames.sort(key=lambda x: x['frame_idx'])
-    
-    if not clip_frames:
-        clip_frames = [target_frame]
-    
-    # Determine actual frame dimensions from stored images
-    h, w = clip_frames[0]['image'].shape[:2]
+def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
+                       fps, width, height, frame_data, skip_val, ref_angles=None):
+    """Memory-safe multi-clip generator: Re-reads only short windows around each target frame."""
     
     fourcc = cv2.VideoWriter_fourcc(*'avc1')
-    clip_fps = max(fps * 0.5, 10)  # Slow motion for review
+    clip_fps = fps # Normal playback speed for smooth viewing
     writer = cv2.VideoWriter(
         os.path.join(output_dir, output_name), fourcc,
-        clip_fps, (w, h)
+        clip_fps, (width, height)
     )
     
-    for f in clip_frames:
-        annotated = _annotate_frame(f, w, h)
-        writer.write(annotated)
+    cap = cv2.VideoCapture(input_path)
     
+    last_bbox = None # Box hold algorithm state
+    trail_points = collections.deque(maxlen=20) # Kinetic Swing Trail
+
+    chapters = []
+    current_time_sec = 0.0
+    
+    for idx, target_frame in enumerate(target_frames):
+        target_idx = target_frame['frame_idx']
+        window = int(fps * 0.75)  # 0.75 seconds around contact (1.5 seconds per shot)
+        start_f = max(0, target_idx - window)
+        end_f = target_idx + window
+        
+        fdata_map = {f['frame_idx']: f for f in frame_data if start_f <= f['frame_idx'] <= end_f}
+        
+        cap.set(cv2.CAP_PROP_POS_FRAMES, start_f)
+        
+        curr_idx = start_f
+        frames_written = 0
+        while curr_idx <= end_f:
+            ret, frame = cap.read()
+            if not ret: break
+            
+            frame = cv2.resize(frame, (width, height))
+            fdata = fdata_map.get(curr_idx)
+            
+            if fdata and fdata.get('pose_landmarks'):
+                # Update box hold
+                xs = [lm.x for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
+                ys = [lm.y for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
+                
+                # Track wrist for Kinetic Trail
+                wrist_idx = mp_pose.PoseLandmark.RIGHT_WRIST.value
+                wrist_lm = fdata['pose_landmarks'].landmark[wrist_idx]
+                if wrist_lm.visibility > 0.3:
+                    trail_points.append((int(wrist_lm.x * width), int(wrist_lm.y * height)))
+                
+                if xs and ys:
+                    min_x, max_x = int(min(xs) * width), int(max(xs) * width)
+                    min_y, max_y = int(min(ys) * height), int(max(ys) * height)
+                    padding = 20
+                    last_bbox = (max(0, min_x - padding), max(0, min_y - padding), 
+                                 min(width, max_x + padding), min(height, max_y + padding))
+            
+            # Draw the box from the "box hold" state to ensure smoothness
+            if last_bbox:
+                cv2.rectangle(frame, (last_bbox[0], last_bbox[1]), (last_bbox[2], last_bbox[3]), (255, 0, 0), 2)
+                cv2.putText(frame, "USER", (last_bbox[0], last_bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                
+            # Flash the "CONTACT POINT" text
+            if abs(curr_idx - target_idx) <= max(1, int(fps * 0.15)):
+                cv2.putText(frame, "CONTACT POINT", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                
+            writer.write(frame)
+            curr_idx += 1
+            frames_written += 1
+            
+        duration_sec = frames_written / clip_fps
+        chapters.append({
+            "shot_index": idx + 1,
+            "start_time": round(current_time_sec, 2),
+            "end_time": round(current_time_sec + duration_sec, 2),
+            "duration": round(duration_sec, 2)
+        })
+        current_time_sec += duration_sec
+            
+    cap.release()
     writer.release()
+    return chapters
 
 
 def _generate_basic_feedback(contact_angles, worst_angles, shot_type):

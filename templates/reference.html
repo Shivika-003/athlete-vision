@@ -8,7 +8,31 @@
             <h2 style="margin-bottom: 0.25rem;">Reference Player</h2>
             <p style="color: var(--text-muted);">Your AI benchmark — compare your technique against the best.</p>
         </div>
-        <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+        <div style="display: flex; gap: 1rem;">
+            <button onclick="document.getElementById('create-player-modal').style.display='flex'" class="btn btn-pink">+ New Player</button>
+            <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Active Player Switcher -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; border-left: 4px solid var(--accent-neon-blue);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 style="margin-bottom: 0.25rem; font-size: 1.2rem; color: var(--text-main);">Active Benchmark</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0;">Select which professional player to compare your technique against.</p>
+            </div>
+            
+            <form action="{% if ref_player %}{{ url_for('set_active_reference_player', player_id=ref_player.id) }}{% else %}#{% endif %}" method="POST" id="switch-player-form" style="display: flex; gap: 0.5rem; align-items: center; background: rgba(255,255,255,0.03); padding: 0.5rem; border-radius: 12px; border: 1px solid var(--border);">
+                <select id="player-select" style="padding: 0.6rem; border-radius: 8px; font-weight: 600; min-width: 200px; background: var(--bg-darker); border: 1px solid var(--border); color: var(--text-main);" onchange="updateSwitcherAction(this.value);">
+                    {% for p in all_players %}
+                    <option value="{{ p.id }}" {% if p.is_active %}selected{% endif %}>
+                        {{ p.name }} {% if p.is_active %}(Active){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn" style="white-space: nowrap;">Set Active</button>
+            </form>
+        </div>
     </div>
 
     {% if ref_player %}
@@ -161,9 +185,47 @@
     </div>
     {% endif %}
 
+    <!-- Create Player Modal -->
+    <div id="create-player-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="card" style="width: 100%; max-width: 500px; position: relative;">
+            <button onclick="document.getElementById('create-player-modal').style.display='none'" style="position: absolute; right: 1.5rem; top: 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            <h3 style="margin-bottom: 0.5rem; color: var(--accent-pink);">Create Reference Player</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Add a new player profile to the database.</p>
+            
+            <form action="{{ url_for('create_reference_player') }}" method="POST">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Player Name</label>
+                    <input type="text" name="name" required style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-darker); color: white;" placeholder="e.g. Viktor Axelsen">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nationality</label>
+                    <input type="text" name="nationality" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-darker); color: white;" placeholder="e.g. Denmark">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Preferred Hand</label>
+                    <select name="hand" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-darker); color: white;">
+                        <option value="right">Right-handed</option>
+                        <option value="left">Left-handed</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description/Notes</label>
+                    <textarea name="description" rows="3" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-darker); color: white;" placeholder="Add notes about their playstyle..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-pink" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Create & Set Active</button>
+            </form>
+        </div>
+    </div>
+
 </div>
 
 <script>
+    // Player switcher: update form action with the selected player ID
+    function updateSwitcherAction(playerId) {
+        const baseUrl = "{{ url_for('set_active_reference_player', player_id=99999) }}".replace('99999', playerId);
+        document.getElementById('switch-player-form').action = baseUrl;
+    }
+
     // Shot tab switching
     function showShotData(shotType) {
         // Hide all panels
