@@ -128,7 +128,7 @@ def compare_user_with_reference(user_results):
         'has_reference': True,
         'scientific_metrics': {
             'cosine_similarity': round(similarity / 100.0, 3),
-            'joint_variance': round(sum(d['abs_difference'] for d in joint_diffs.values()) / len(joint_diffs), 2) if joint_diffs else 0,
+            'joint_variance': round(sum(d['abs_difference'] for d in joint_diffs.values()) / len(joint_diffs), 2) if joint_diffs else 0.0,
             'stability_index': round(stability_score / 10.0, 1),
             'max_swing_speed': round(min(300, max(80, user_results.get('max_wrist_vel', 0) * 12.5)), 1)
         }
@@ -205,6 +205,11 @@ def serialize_comparison(comparison_data):
         'joint_diffs': comparison_data.get('joint_diffs'),
         'weaknesses': comparison_data.get('weaknesses'),
         'has_reference': comparison_data.get('has_reference'),
+        'stability_score': comparison_data.get('stability_score'),
+        'phase_comparison': comparison_data.get('phase_comparison'),
+        'scientific_metrics': comparison_data.get('scientific_metrics'),
+        'feedback': comparison_data.get('feedback'),
+        'automated_processing': comparison_data.get('automated_processing'),
     }
     return json.dumps(safe_data)
 

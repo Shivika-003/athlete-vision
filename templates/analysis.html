@@ -2,650 +2,378 @@
 
 {% block content %}
 <style>
-    /* Scientific Toggle Switch */
-    .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px; border: 1px solid var(--border); }
-    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: var(--accent-pink); border-color: var(--accent-pink); }
-    input:checked + .slider:before { transform: translateX(22px); }
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .score-ring {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .score-ring svg {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        transform: rotate(-90deg);
+    }
+    .score-ring .score-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        z-index: 2;
+    }
+    .angle-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .angle-bar-label {
+        width: 90px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+    .angle-bar-track {
+        flex: 1;
+        height: 10px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .angle-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .angle-bar-value {
+        width: 55px;
+        text-align: right;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    .analysis-metric-card {
+        background: linear-gradient(135deg, rgba(30, 58, 95, 0.5), rgba(22, 45, 74, 0.7));
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .analysis-metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+    }
+    .feedback-card {
+        background: rgba(14, 165, 233, 0.04);
+        border: 1px solid rgba(14, 165, 233, 0.15);
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1rem;
+        transition: border-color 0.3s;
+    }
+    .feedback-card:hover {
+        border-color: rgba(14, 165, 233, 0.4);
+    }
+    .snapshot-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+        .snapshot-grid { grid-template-columns: 1fr; }
+    }
 </style>
+
 <div class="fade-in">
+    <!-- ═══════════ HEADER ═══════════ -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h2 style="margin-bottom: 0.25rem;">Athlete Vision Report</h2>
+            <h2 style="margin-bottom: 0.25rem;">
+                {% if record.shot_type == 'Match Analysis' %}
+                    🤖 Match Analysis Report
+                {% else %}
+                    🏸 Biomechanical Analysis Report
+                {% endif %}
+            </h2>
             <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0; font-weight: 600;">
                 <span style="color: var(--text-main);">Athlete:</span> <span style="color: var(--accent-cyan); text-transform: capitalize;">{{ current_user.username }}</span> &nbsp;|&nbsp; 
-                <span style="color: var(--text-main);">Sport:</span> <span style="color: var(--accent-pink); text-transform: capitalize;">{{ current_user.sport or 'Badminton' }}</span> &nbsp;|&nbsp;
-                <span style="color: var(--text-main);">Date:</span> {{ record.upload_date.strftime('%b %d, %Y') }}
+                <span style="color: var(--text-main);">Date:</span> {{ record.upload_date.strftime('%b %d, %Y at %I:%M %p') }}
+                {% if record.shot_type and record.shot_type != 'Match Analysis' %}
+                &nbsp;|&nbsp; <span style="color: var(--text-main);">Shot:</span> <span style="color: var(--accent-gold); text-transform: capitalize;">{{ record.shot_type }}</span>
+                {% endif %}
             </p>
         </div>
-        <div id="action-buttons" style="display: flex; gap: 1rem; align-items: center;">
-            <div class="toggle-container" style="display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 12px; border: 1px solid var(--border);">
-                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">Scientific Mode</span>
-                <label class="switch">
-                    <input type="checkbox" id="scientificToggle" onchange="toggleScientificMode()">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-            <button onclick="downloadReport()" class="btn btn-primary" style="background: linear-gradient(135deg, var(--accent-neon-blue), var(--accent-cyan)); border: none;"><i class="fas fa-download"></i> Save PDF Report</button>
+        <div style="display: flex; gap: 1rem; align-items: center;">
             <a href="{{ url_for('dashboard') }}" class="btn">&larr; Back to Dashboard</a>
         </div>
     </div>
 
-    <!-- ═══════════ 1. VIDEO COMPARISON (MAIN FOCUS) ═══════════ -->
+    {% if record.shot_type == 'Match Analysis' %}
+    <!-- ═══════════ MATCH ANALYSIS VIEW ═══════════ -->
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <div style="display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 1000px; margin: 0 auto; align-items: stretch;">
+            <div style="text-align: center; display: flex; flex-direction: column; height: 100%;">
+                <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Tactical Match Analysis</h3>
+                <div style="position: relative; width: 100%; flex-grow: 1; display: flex; align-items: center;">
+                    {% if record.processed_video_path %}
+                    <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);">
+                        <source src="{{ url_for('serve_processed_video', filename=record.processed_video_path) }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <div style="text-align: center; color: var(--text-muted); padding: 3rem; width: 100%;">
+                        <p style="font-size: 1.2rem;">⚙️ Video is still being processed...</p>
+                        <p style="font-size: 0.9rem;">Refresh the page in a few seconds.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- AI Info Box -->
+                <div style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 12px; text-align: left;">
+                    <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
+                        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">🤖 AI Vision Enabled</strong><br>
+                        <span style="color: #ffa500;">🟠 Orange Box</span> — Player 1 (Near court) &nbsp;&nbsp;
+                        <span style="color: #ffff00;">🟡 Yellow Box</span> — Player 2 (Far court) &nbsp;&nbsp;<br>
+                        The stats overlay in the corners shows real-time shot classification, handle detection, and pressure analysis.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ═══════════ SINGLE PLAYER ANALYSIS VIEW ═══════════ -->
+
+    {% if record.status == 'processing' %}
+    <!-- Processing State -->
+    <div class="card animate-fade-in-up" style="text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem; animation: pulse 2s infinite;">⚙️</div>
+        <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">AI is Analyzing Your Video...</h3>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">The AI is detecting your pose, measuring joint angles, classifying shots, and comparing to the pro benchmark. This usually takes 15-45 seconds.</p>
+        <script>setTimeout(function() { window.location.reload(); }, 6000);</script>
+    </div>
+    
+    {% elif record.status == 'failed' %}
+    <div class="card" style="text-align: center; padding: 3rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+        <h3 style="color: #ef4444; margin-bottom: 0.5rem;">Analysis Failed</h3>
+        <p style="color: var(--text-muted);">The AI couldn't process this video. Make sure you're fully visible and the video is clear.</p>
+    </div>
+    
+    {% else %}
+    <!-- ═══════════ SCORE HERO SECTION ═══════════ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
         
-        {% if comparison and comparison.automated_processing %}
-            <!-- Automated Processing Summary Report -->
-            <div style="background: rgba(14,165,233,0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(14,165,233,0.2); margin-bottom: 2rem; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem; text-align: center;">
-                <div>
-                    <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Success Reel</h4>
-                    <p style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">{{ comparison.automated_processing.best_shot_count }} <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">shots</span></p>
-                    <p style="font-size: 0.85rem; color: #22c55e; margin: 0.2rem 0 0 0;">{{ comparison.automated_processing.best_duration_sec }}s total duration</p>
-                </div>
-                <div style="width: 1px; background: rgba(255,255,255,0.1);"></div>
-                <div>
-                    <h4 style="color: var(--accent-pink); font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px;">Improvement Reel</h4>
-                    <p style="font-size: 1.5rem; font-weight: 800; color: var(--text-main); margin: 0;">{{ comparison.automated_processing.worst_shot_count }} <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">shots</span></p>
-                    <p style="font-size: 0.85rem; color: #ef4444; margin: 0.2rem 0 0 0;">{{ comparison.automated_processing.worst_duration_sec }}s total duration</p>
-                </div>
+        <!-- Overall Score Ring -->
+        <div class="analysis-metric-card" style="grid-column: span 1;">
+            <div class="score-ring" style="margin: 0 auto 0.75rem;">
+                <svg viewBox="0 0 140 140">
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                    <circle cx="70" cy="70" r="60" fill="none" 
+                        stroke="{% if record.performance_score and record.performance_score >= 70 %}#4ade80{% elif record.performance_score and record.performance_score >= 40 %}#fbbf24{% else %}#f87171{% endif %}" 
+                        stroke-width="10" stroke-linecap="round"
+                        stroke-dasharray="{{ (record.performance_score or 0) * 3.77 }} 377"
+                        style="transition: stroke-dasharray 2s ease;"/>
+                </svg>
+                <span class="score-value" style="color: {% if record.performance_score and record.performance_score >= 70 %}#4ade80{% elif record.performance_score and record.performance_score >= 40 %}#fbbf24{% else %}#f87171{% endif %};">
+                    {{ "%.0f"|format(record.performance_score or 0) }}
+                </span>
             </div>
-        {% endif %}
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PERFORMANCE</p>
+        </div>
 
-        {% if record.snapshot_path and '|' in record.snapshot_path %}
-            {% set snap_parts = record.snapshot_path.split('|') %}
-            {% set vid_parts = record.processed_video_path.split('|') if record.processed_video_path and '|' in record.processed_video_path else [record.processed_video_path, record.processed_video_path] %}
-            
-            <div style="display: flex; flex-direction: column; gap: 4rem; width: 100%; max-width: 800px; margin: 0 auto; align-items: stretch;">
-                {% set times = record.worst_timestamp.split('|') if record.worst_timestamp and '|' in record.worst_timestamp else [record.worst_timestamp, record.worst_timestamp] %}
-                
-                <!-- Best Shot (Success Reel) -->
-                <div style="text-align: center; display: flex; flex-direction: column; height: 100%;">
-                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Success Reel</h3>
-                    <div style="position: relative; width: 100%; flex-grow: 1; display: flex; align-items: center;">
-                        <video id="vid-best" class="screen-only" controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(34,197,94,0.3); box-shadow: 0 4px 20px rgba(34,197,94,0.1);">
-                            {% if vid_parts and vid_parts[0] %}
-                            <source src="{{ url_for('serve_processed_video', filename=vid_parts[0]) }}" type="video/mp4">
-                            {% endif %}
-                        </video>
-                    </div>
-                    {% if snap_parts and snap_parts[0] %}
-                    <img class="pdf-snapshot" src="{{ url_for('serve_processed_video', filename=snap_parts[0]) }}" style="width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); display: none;">
-                    {% endif %}
-                    
-                    {% if comparison and comparison.automated_processing and comparison.automated_processing.best_chapters_file %}
-                        <button type="button" class="btn screen-only" onclick="nextBestShot()" style="margin-top: 1rem; background: linear-gradient(135deg, #10b981, #059669); font-weight: 700; width: 100%; padding: 0.75rem;">⏭️ Skip to Next Shot</button>
-                    {% endif %}
-                    
-                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); border-radius: 8px; text-align: left;">
-                        <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
-                            <strong style="color: #22c55e;">✅ Good Form</strong> — Contains all shots where your technique closely matches the professional reference.
-                            {% if record.shot_type %}<br><strong>Shot Type:</strong> <span style="text-transform: capitalize; color: var(--text-main);">{{ record.shot_type }}</span>{% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Improvement Shot (Improvement Reel) -->
-                <div style="text-align: center; display: flex; flex-direction: column; height: 100%;">
-                    <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Improvement Reel</h3>
-                    <div style="position: relative; width: 100%; flex-grow: 1; display: flex; align-items: center;">
-                        <video id="vid-worst" class="screen-only" controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(239,68,68,0.3); box-shadow: 0 4px 20px rgba(239,68,68,0.1);">
-                            {% if vid_parts and vid_parts|length > 1 and vid_parts[1] %}
-                            <source src="{{ url_for('serve_processed_video', filename=vid_parts[1]) }}" type="video/mp4">
-                            {% endif %}
-                        </video>
-                    </div>
-                    {% if snap_parts and snap_parts|length > 1 and snap_parts[1] %}
-                    <img class="pdf-snapshot" src="{{ url_for('serve_processed_video', filename=snap_parts[1]) }}" style="width: 100%; border-radius: 12px; border: 2px solid rgba(255,255,255,0.1); display: none;">
-                    {% endif %}
-                    
-                    {% if comparison and comparison.automated_processing and comparison.automated_processing.worst_chapters_file %}
-                        <button type="button" class="btn screen-only" onclick="nextWorstShot()" style="margin-top: 1rem; background: linear-gradient(135deg, #ef4444, #b91c1c); font-weight: 700; width: 100%; padding: 0.75rem;">⏭️ Skip to Next Shot</button>
-                    {% endif %}
-                    
-                    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15); border-radius: 12px; text-align: left;">
-                        <div style="font-size: 1rem; color: var(--text-muted); line-height: 1.6;">
-                            <strong style="color: #ef4444; font-size: 1.1rem;">⚠️ Needs Work</strong> — The video above compiles your mistakes. Use the button to skip to the next error frame.
-                        </div>
-                    </div>
-                </div>
+        <!-- Similarity Score -->
+        <div class="analysis-metric-card">
+            <div class="score-ring" style="margin: 0 auto 0.75rem;">
+                <svg viewBox="0 0 140 140">
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="#00d4ff" stroke-width="10" stroke-linecap="round"
+                        stroke-dasharray="{{ (record.similarity_score or 0) * 3.77 }} 377"
+                        style="transition: stroke-dasharray 2s ease;"/>
+                </svg>
+                <span class="score-value" style="color: #00d4ff;">{{ "%.0f"|format(record.similarity_score or 0) }}</span>
             </div>
-            <script>
-                // Video Navigation Logic
-                let bestChapters = [];
-                let currentBestIdx = 0;
-                
-                {% if comparison and comparison.automated_processing %}
-                    {% if comparison.automated_processing.best_chapters_file %}
-                    fetch("{{ url_for('serve_processed_video', filename=comparison.automated_processing.best_chapters_file) }}")
-                        .then(res => res.json())
-                        .then(data => {
-                            bestChapters = data;
-                        })
-                        .catch(err => console.error("Could not load chapters", err));
-                    {% endif %}
-                        
-                    function nextBestShot() {
-                        const vid = document.getElementById('vid-best');
-                        if (!vid || bestChapters.length === 0) return;
-                        if (bestChapters.length === 1) {
-                            vid.currentTime = 0;
-                            vid.play();
-                            alert("Only one successful shot was detected in this clip.");
-                            return;
-                        }
-                        
-                        currentBestIdx = (currentBestIdx + 1) % bestChapters.length;
-                        vid.currentTime = bestChapters[currentBestIdx].start_time;
-                        vid.play();
-                    }
-                    
-                    let worstChapters = [];
-                    let currentWorstIdx = 0;
-                    
-                    {% if comparison.automated_processing.worst_chapters_file %}
-                    fetch("{{ url_for('serve_processed_video', filename=comparison.automated_processing.worst_chapters_file) }}")
-                        .then(res => res.json())
-                        .then(data => {
-                            worstChapters = data;
-                        })
-                        .catch(err => console.error("Could not load worst chapters", err));
-                    {% endif %}
-                        
-                    function nextWorstShot() {
-                        const vid = document.getElementById('vid-worst');
-                        if (!vid || worstChapters.length === 0) return;
-                        if (worstChapters.length === 1) {
-                            vid.currentTime = 0;
-                            vid.play();
-                            alert("Only one error shot was detected in this clip.");
-                            return;
-                        }
-                        
-                        currentWorstIdx = (currentWorstIdx + 1) % worstChapters.length;
-                        vid.currentTime = worstChapters[currentWorstIdx].start_time;
-                        vid.play();
-                    }
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRO SIMILARITY</p>
+        </div>
+
+        <!-- Arm Score -->
+        <div class="analysis-metric-card">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💪</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-pink);">{{ "%.0f"|format(record.arm_score or 0) }}%</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ARM EXTENSION</p>
+        </div>
+
+        <!-- Knee Score -->
+        <div class="analysis-metric-card">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🦵</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-neon-green);">{{ "%.0f"|format(record.knee_score or 0) }}%</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">KNEE BEND</p>
+        </div>
+
+        <!-- Hip/Core Score -->
+        <div class="analysis-metric-card">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔄</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-gold);">{{ "%.0f"|format(record.hip_score or 0) }}%</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">CORE PIVOT</p>
+        </div>
+    </div>
+
+    <!-- ═══════════ JOINT ANGLE BREAKDOWN ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">📐 Joint Angle Breakdown <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(at contact frame)</span></h3>
+        
+        <!-- Shoulder -->
+        <div class="angle-bar">
+            <span class="angle-bar-label">Shoulder</span>
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill" style="width: {{ ((record.shoulder_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #f472b6, #ec4899);"></div>
+            </div>
+            <span class="angle-bar-value" style="color: var(--accent-pink);">{{ "%.0f"|format(record.shoulder_angle or 0) }}°</span>
+        </div>
+        
+        <!-- Elbow -->
+        <div class="angle-bar">
+            <span class="angle-bar-label">Elbow</span>
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill" style="width: {{ ((record.elbow_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #00d4ff, #0ea5e9);"></div>
+            </div>
+            <span class="angle-bar-value" style="color: var(--accent-cyan);">{{ "%.0f"|format(record.elbow_angle or 0) }}°</span>
+        </div>
+
+        <!-- Wrist -->
+        <div class="angle-bar">
+            <span class="angle-bar-label">Wrist</span>
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill" style="width: {{ ((record.wrist_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div>
+            </div>
+            <span class="angle-bar-value" style="color: var(--accent-gold);">{{ "%.0f"|format(record.wrist_angle or 0) }}°</span>
+        </div>
+
+        <!-- Knee -->
+        <div class="angle-bar">
+            <span class="angle-bar-label">Knee</span>
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill" style="width: {{ ((record.knee_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #4ade80, #22c55e);"></div>
+            </div>
+            <span class="angle-bar-value" style="color: var(--accent-neon-green);">{{ "%.0f"|format(record.knee_angle or 0) }}°</span>
+        </div>
+
+        <!-- Ankle -->
+        <div class="angle-bar">
+            <span class="angle-bar-label">Ankle</span>
+            <div class="angle-bar-track">
+                <div class="angle-bar-fill" style="width: {{ ((record.ankle_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #a78bfa, #8b5cf6);"></div>
+            </div>
+            <span class="angle-bar-value" style="color: #a78bfa;">{{ "%.0f"|format(record.ankle_angle or 0) }}°</span>
+        </div>
+    </div>
+
+    <!-- ═══════════ AI SNAPSHOTS (Best vs Worst with Bounding Boxes) ═══════════ -->
+    {% if record.snapshot_path %}
+    {% set snap_parts = record.snapshot_path.split('|') %}
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-main);">📸 AI Detected Frames <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(with bounding boxes)</span></h3>
+        <div class="snapshot-grid">
+            {% if snap_parts|length >= 1 and snap_parts[0] %}
+            <div style="text-align: center;">
+                <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 0.75rem;">
+                    <p style="color: #4ade80; font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem;">✅ Best Shot Frame{% if snap_parts|length >= 2 %} — Quality: {{ snap_parts[1] }}%{% endif %}</p>
+                    <img src="{{ url_for('serve_processed_video', filename=snap_parts[0]) }}" 
+                         alt="Best pose with bounding box" 
+                         style="width: 100%; border-radius: 10px; border: 2px solid rgba(34, 197, 94, 0.3);">
+                </div>
+                {% if record.worst_timestamp %}
+                {% set ts_parts = record.worst_timestamp.split('|') %}
+                {% if ts_parts|length >= 1 %}
+                <p style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Best at <strong style="color: var(--text-main);">{{ ts_parts[0] }}</strong></p>
                 {% endif %}
-                
-                window.addEventListener('load', () => {
-                    let vb = document.getElementById('vid-best');
-                    let vw = document.getElementById('vid-worst');
-                    if(vb) vb.playbackRate = 0.5;
-                    if(vw) vw.playbackRate = 0.5;
-                });
-            </script>
-        {% else %}
-            <div style="text-align: center; color: var(--text-muted); padding: 3rem;">Videos Unavailable</div>
-        {% endif %}
-    </div>
+                {% endif %}
+            </div>
+            {% endif %}
 
-    <!-- ═══════════ 2. ATHLETE CONSISTENCY & STATS (PDF Request) ═══════════ -->
-    <div id="stats-section" class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.5rem;">📈 Athlete Consistency</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
-            <!-- Metrics Column -->
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="background: rgba(34,197,94,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(34,197,94,0.2);">
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Skill Level</p>
-                    <p style="font-weight: 800; font-size: 1.4rem; color: #22c55e; margin: 0;">
-                        {% if avg_similarity >= 85 %}👑 Pro{% elif avg_similarity >= 70 %}⭐ Advanced{% elif avg_similarity >= 50 %}📈 Intermediate{% else %}🌱 Beginner{% endif %}
-                    </p>
+            {% if snap_parts|length >= 3 and snap_parts[2] %}
+            <div style="text-align: center;">
+                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 0.75rem;">
+                    <p style="color: #f87171; font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem;">⚠️ Worst Shot Frame{% if snap_parts|length >= 4 %} — Quality: {{ snap_parts[3] }}%{% endif %}</p>
+                    <img src="{{ url_for('serve_processed_video', filename=snap_parts[2]) }}" 
+                         alt="Worst pose with bounding box" 
+                         style="width: 100%; border-radius: 10px; border: 2px solid rgba(239, 68, 68, 0.3);">
                 </div>
-                
-                <div style="background: rgba(245,158,11,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(245,158,11,0.2);">
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Training Streak</p>
-                    <p style="font-weight: 800; font-size: 1.4rem; color: #f59e0b; margin: 0;">🔥 {{ streak }} day{{ 's' if streak != 1 else '' }}</p>
-                </div>
-                
-                <div style="background: rgba(14,165,233,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(14,165,233,0.2);">
-                    <p style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem;">Avg Similarity</p>
-                    <p style="font-weight: 800; font-size: 1.4rem; color: #0ea5e9; margin: 0;">{{ avg_similarity }}% match</p>
-                </div>
-            </div>
-            
-            <!-- Chart Column -->
-            <div style="height: 250px;">
-                <canvas id="consistencyChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-
-
-
-    <!-- ═══════════ 3. RADAR CHART + ANGLE TABLE ═══════════ -->
-    {% if comparison and comparison.get('has_reference') and comparison.get('joint_diffs') %}
-    <div id="radar-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-        <!-- Radar Chart -->
-        <div class="card animate-fade-in-up" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.3rem; text-align: center;">📊 Biomechanical Radar</h3>
-            <div style="width: 100%; max-width: 380px; aspect-ratio: 1;">
-                <canvas id="radarChart"></canvas>
-            </div>
-            <div style="display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.85rem; font-weight: 600;">
-                <span style="display: flex; align-items: center; gap: 0.4rem;"><span style="width: 12px; height: 12px; border-radius: 3px; background: rgba(14,165,233,0.7);"></span> You</span>
-                <span style="display: flex; align-items: center; gap: 0.4rem;"><span style="width: 12px; height: 12px; border-radius: 3px; background: rgba(236,72,153,0.7);"></span> {{ comparison.reference_player or 'Pro' }}</span>
-            </div>
-        </div>
-
-        <!-- Angle Difference Table -->
-        <div class="card animate-fade-in-up">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.3rem;">📐 Angle Discrepancies</h3>
-            <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
-                <thead>
-                    <tr style="text-align: left;">
-                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">Joint</th>
-                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--accent-cyan); font-size: 0.85rem; font-weight: 700; text-align: center;">You</th>
-                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--accent-pink); font-size: 0.85rem; font-weight: 700; text-align: center;">Pro</th>
-                        <th style="padding: 0.75rem 0.5rem; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.85rem; font-weight: 700; text-align: center;">Δ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for joint, data in comparison.joint_diffs.items() %}
-                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.04);">
-                        <td style="padding: 0.7rem 0.5rem; font-weight: 700; text-transform: capitalize; color: var(--text-main);">
-                            {% if joint == 'shoulder' %}💪{% elif joint == 'elbow' %}🦾{% elif joint == 'wrist' %}🤚{% elif joint == 'knee' %}🦵{% else %}🦶{% endif %}
-                            {{ joint }}
-                        </td>
-                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 700; color: var(--text-main);">{{ data.user }}°</td>
-                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 700; color: var(--accent-pink);">{{ data.reference }}°</td>
-                        <td style="padding: 0.7rem 0.5rem; text-align: center; font-weight: 800; font-size: 1rem;
-                            color: {% if data.abs_difference <= 5 %}#22c55e{% elif data.abs_difference <= 15 %}#eab308{% else %}#ef4444{% endif %};">
-                            {% if data.difference > 0 %}+{% endif %}{{ data.difference }}°
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-            {% if comparison.get('weaknesses') %}
-            <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(239,68,68,0.04); border-radius: 10px; border: 1px solid rgba(239,68,68,0.1);">
-                <h4 style="color: #ef4444; margin-bottom: 0.5rem; font-size: 0.95rem;">⚠️ Priority Fixes</h4>
-                {% for w in comparison.weaknesses[:3] %}
-                <p style="color: var(--text-main); font-size: 0.9rem; margin-bottom: 0.25rem;">
-                    <strong style="text-transform: capitalize;">{{ w.joint }}</strong>: off by <strong style="color: #ef4444;">{{ "%.1f"|format(w.deviation) }}°</strong>
-                </p>
-                {% endfor %}
+                {% if record.worst_timestamp %}
+                {% set ts_parts = record.worst_timestamp.split('|') %}
+                {% if ts_parts|length >= 2 %}
+                <p style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Worst at <strong style="color: var(--text-main);">{{ ts_parts[1] }}</strong></p>
+                {% endif %}
+                {% endif %}
             </div>
             {% endif %}
         </div>
     </div>
     {% endif %}
 
-    <!-- ═══════════ 6. SCIENTIFIC METRICS (NEW) ═══════════ -->
-    <div id="scientific-section" class="card animate-fade-in-up" style="margin-bottom: 2rem; display: none;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">🔬 Biomechanical Analysis Data</h3>
-        <div style="display: flex; justify-content: center; width: 100%;">
-            <div style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 600px;">
-                <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; text-align: center;">Metric Breakdown</h4>
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Cosine Similarity</span>
-                        <strong style="color: var(--accent-cyan);">{{ (comparison.scientific_metrics.cosine_similarity if comparison and comparison.scientific_metrics else '0.852') }}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Joint Variance</span>
-                        <strong style="color: var(--accent-pink);">{{ (comparison.scientific_metrics.joint_variance if comparison and comparison.scientific_metrics else '8.32') }}°</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Stability Index</span>
-                        <strong style="color: #22c55e;">{{ (comparison.scientific_metrics.stability_index if comparison and comparison.scientific_metrics else '8.5') }}/10</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Max Swing Speed</span>
-                        <strong style="color: #f59e0b;">{{ (comparison.scientific_metrics.max_swing_speed if comparison and comparison.scientific_metrics else '185.4') }} km/h</strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════ 4. TECHNIQUE REFERENCE vs YOUR RAW VIDEO ═══════════ -->
-    <div id="technique-section" class="card animate-fade-in-up screen-only" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--accent-neon-blue); font-size: 1.5rem;">📸 Correct Technique vs Your Footage</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; align-items: start;">
-            
-            <!-- LEFT: YouTube Tutorial (rotates between 4 videos per category) -->
-            <div style="text-align: center;">
-                <h4 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent-cyan); font-weight: 700;">Pro Reference</h4>
-                
-                {% set elbow_videos = ['H7kpZ9inc10', 'fhCRxZYGD-0', 'vGD-VU0sAc8', 'DWsHRZFTqtk'] %}
-                {% set shoulder_videos = ['CsVJ5A1SwIg', 'vqZ7A9mp1ds', 'rX0DIh7siO8', 'xRv1JLg4NMM'] %}
-                {% set knee_videos = ['TRd7Dz3MliE', '3bOJvDJg_TQ', 'IB4cJxvfXtI', 'hAD4qe9DtwU'] %}
-                {% set general_videos = ['4xdKCDccJW8', 'DxoPYeNIFYE', '33XM2gMTqLw', 'aqiRO_8A9jo'] %}
-                
-                {% set vid_index = record.id % 4 %}
-                
-                {% if 'Elbow' in record.feedback_text or 'elbow' in record.feedback_text|lower or 'arm' in record.feedback_text|lower %}
-                    {% set yt_id = elbow_videos[vid_index] %}
-                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
-                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch this pro elbow/arm technique breakdown. <strong>Compare your arm extension!</strong></p>
-
-                {% elif 'Shoulder' in record.feedback_text or 'shoulder' in record.feedback_text|lower or 'rotation' in record.feedback_text|lower %}
-                    {% set yt_id = shoulder_videos[vid_index] %}
-                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
-                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch how to rotate shoulders into the shot. <strong>Compare your torso twist!</strong></p>
-
-                {% elif 'Knee' in record.feedback_text or 'knee' in record.feedback_text|lower or 'leg' in record.feedback_text|lower %}
-                    {% set yt_id = knee_videos[vid_index] %}
-                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-cyan); box-shadow: 0 8px 30px rgba(34,211,238,0.2);"></iframe>
-                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Watch explosive knee bends and footwork. <strong>Compare your stance!</strong></p>
-
-                {% else %}
-                    {% set yt_id = general_videos[vid_index] %}
-                    <iframe src="https://www.youtube.com/embed/{{ yt_id }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-neon-green); box-shadow: 0 8px 30px rgba(34,197,94,0.2);"></iframe>
-                    <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Your form is excellent! Practice these advanced techniques.</p>
-                {% endif %}
-            </div>
-            
-            <!-- RIGHT: User's Raw Video -->
-            <div style="text-align: center;">
-                <h4 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--accent-pink); font-weight: 700;">Your Raw Footage</h4>
-                <video controls loop muted playsinline style="width: 100%; aspect-ratio: 16/9; border-radius: 10px; border: 3px solid var(--accent-pink); box-shadow: 0 8px 30px rgba(236,72,153,0.2); background: #000; object-fit: contain;">
-                    <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
-                    <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
-                    Your browser does not support the video tag.
-                </video>
-                <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.95rem; line-height: 1.5;">Your original uploaded video. <strong>Compare side-by-side with the pro!</strong></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════ 5. IMPROVEMENT TIPS SECTION ═══════════ -->
+    <!-- ═══════════ PROCESSED VIDEO REELS (Best & Worst) ═══════════ -->
+    {% if record.processed_video_path %}
+    {% set vid_parts = record.processed_video_path.split('|') %}
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-            <h3 style="margin: 0; color: var(--text-main); font-size: 1.5rem;">💡 Improvement Tips</h3>
-            <button onclick="playVoiceCoach()" id="voiceBtn" class="btn" style="background: rgba(14,165,233,0.1); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 0.5rem 1rem; font-size: 0.9rem;">
-                🔊 Listen to Coach
-            </button>
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-main);">🎬 AI Highlight Reels <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(annotated with bounding boxes)</span></h3>
+        <div class="snapshot-grid">
+            {% if vid_parts|length >= 1 and vid_parts[0] %}
+            <div>
+                <p style="color: #4ade80; font-weight: 700; margin-bottom: 0.75rem; text-align: center;">✅ Best Shots Reel</p>
+                <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(34, 197, 94, 0.3);">
+                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[0]) }}" type="video/mp4">
+                </video>
+            </div>
+            {% endif %}
+            {% if vid_parts|length >= 2 and vid_parts[1] %}
+            <div>
+                <p style="color: #f87171; font-weight: 700; margin-bottom: 0.75rem; text-align: center;">⚠️ Improvement Reel</p>
+                <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(239, 68, 68, 0.3);">
+                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[1]) }}" type="video/mp4">
+                </video>
+            </div>
+            {% endif %}
         </div>
+    </div>
+    {% endif %}
 
+    <!-- ═══════════ AI COACHING FEEDBACK ═══════════ -->
+    {% if record.feedback_text %}
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">🤖 AI Coaching Feedback</h3>
         {% set feedback_parts = record.feedback_text.split('|') %}
-        
-        {% if feedback_parts|length == 6 %}
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for part in feedback_parts %}
+            {% set part_trimmed = part.strip() %}
+            {% if part_trimmed %}
+            <div class="feedback-card">
+                <p style="font-size: 1.05rem; color: var(--text-main); line-height: 1.6; margin: 0;">{{ part_trimmed }}</p>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
 
-                <!-- Issue -->
-                <div style="background: rgba(239,68,68,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #ef4444;">
-                    <strong style="color: #ef4444; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Issue:</strong>
-                    {{ feedback_parts[0].split(':')[1] if ':' in feedback_parts[0] else feedback_parts[0] }}
-                </div>
-                <!-- Fix -->
-                <div style="background: rgba(34,197,94,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #22c55e;">
-                    <strong style="color: #22c55e; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Fix:</strong>
-                    {{ feedback_parts[1].split(':')[1] if ':' in feedback_parts[1] else feedback_parts[1] }}
-                </div>
-                <!-- Drill -->
-                <div style="background: rgba(236,72,153,0.1); padding: 1.2rem; border-radius: 8px; border-left: 4px solid #ec4899;">
-                    <strong style="color: #ec4899; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Drill:</strong>
-                    {{ feedback_parts[3].split(':')[1] if ':' in feedback_parts[3] else feedback_parts[3] }}
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <!-- Cue -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border);">
-                        <strong style="color: #8b5cf6; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Cue:</strong>
-                        {{ feedback_parts[4].split(':')[1] if ':' in feedback_parts[4] else feedback_parts[4] }}
-                    </div>
-                    <!-- Checkpoint -->
-                    <div style="background: rgba(255,255,255,0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border);">
-                        <strong style="color: #f59e0b; font-size: 1.1rem; display: block; margin-bottom: 0.3rem;">Checkpoint:</strong>
-                        {{ feedback_parts[5].split(':')[1] if ':' in feedback_parts[5] else feedback_parts[5] }}
-                    </div>
-                </div>
-            </div>
-        {% else %}
-            <!-- Fallback for older analysis versions -->
-            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
-                <p>{{ record.feedback_text }}</p>
-            </div>
-        {% endif %}
+    {% endif %}
+    {% endif %}
 
-        <!-- Level -->
-        <div style="margin-top: 1.5rem; background: rgba(14, 165, 233, 0.05); padding: 1.2rem; border-radius: 8px; border: 1px solid rgba(14, 165, 233, 0.2); display: flex; align-items: center; justify-content: space-between;">
-            <strong style="color: var(--text-muted); font-size: 1.1rem;">Level:</strong>
-            <div style="font-size: 1.3rem; font-weight: 800;">
-                {% if record.performance_score >= 80 %}
-                    <span style="color: #22c55e;">Advanced</span>
-                {% elif record.performance_score >= 60 %}
-                    <span style="color: #eab308;">Intermediate</span>
-                {% else %}
-                    <span style="color: #ef4444;">Beginner</span>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 2rem;">
-            <a href="{{ url_for('dashboard') }}" class="btn" style="width: 100%; font-size: 1.2rem; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; display: inline-block;">🔁 Analyze New Shot</a>
-        </div>
+    <!-- ═══════════ ORIGINAL VIDEO ═══════════ -->
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem; color: var(--accent-pink); font-size: 1.3rem;">📹 Original Uploaded Video</h3>
+        <video controls loop muted playsinline style="width: 100%; max-width: 800px; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block; margin: 0 auto;">
+            <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
+            <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
+        </video>
+    </div>
+
+    <!-- Back Button -->
+    <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn" style="width: 100%; max-width: 500px; font-size: 1.2rem; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; display: inline-block;">🔁 Analyze Another Video</a>
     </div>
 </div>
-
-<!-- ═══════════ RADAR CHART SCRIPT ═══════════ -->
-{% if comparison and comparison.get('has_reference') and comparison.get('joint_diffs') %}
-<script>
-    const radarCtx = document.getElementById('radarChart').getContext('2d');
-    
-    const joints = {{ comparison.joint_diffs.keys()|list|tojson|safe }};
-    const userAngles = [{% for j, d in comparison.joint_diffs.items() %}{{ d.user }}{% if not loop.last %},{% endif %}{% endfor %}];
-    const refAngles = [{% for j, d in comparison.joint_diffs.items() %}{{ d.reference }}{% if not loop.last %},{% endif %}{% endfor %}];
-    
-    // Capitalize labels
-    const labels = joints.map(j => j.charAt(0).toUpperCase() + j.slice(1));
-    
-    new Chart(radarCtx, {
-        type: 'radar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'You',
-                    data: userAngles,
-                    backgroundColor: 'rgba(14, 165, 233, 0.15)',
-                    borderColor: 'rgba(14, 165, 233, 0.8)',
-                    borderWidth: 2.5,
-                    pointBackgroundColor: '#0ea5e9',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                },
-                {
-                    label: '{{ comparison.reference_player or "Pro" }}',
-                    data: refAngles,
-                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                    borderColor: 'rgba(236, 72, 153, 0.7)',
-                    borderWidth: 2.5,
-                    pointBackgroundColor: '#ec4899',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    borderDash: [5, 3],
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 180,
-                    ticks: {
-                        stepSize: 30,
-                        backdropColor: 'transparent',
-                        color: '#a3bfdb',
-                        font: { size: 10 }
-                    },
-                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
-                    pointLabels: {
-                        color: '#ffffff',
-                        font: { size: 13, weight: '700' }
-                    }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(22, 45, 74, 0.95)',
-                    titleColor: '#ffffff',
-                    bodyColor: '#a3bfdb',
-                    borderColor: 'rgba(0, 212, 255, 0.2)',
-                    borderWidth: 1,
-                    titleFont: { size: 13, weight: '700' },
-                    bodyFont: { size: 12 },
-                    padding: 12,
-                    cornerRadius: 10,
-                    callbacks: {
-                        label: function(ctx) {
-                            return ctx.dataset.label + ': ' + ctx.parsed.r + '°';
-                        }
-                    }
-                }
-            }
-        }
-    });
-</script>
-{% endif %}
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-    // Consistency Chart Logic
-    const perfData = {{ chart_data | tojson | safe }};
-    const cCtx = document.getElementById('consistencyChart');
-    if (cCtx) {
-        new Chart(cCtx.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: {{ chart_labels | tojson | safe }},
-                datasets: [{
-                    label: 'Performance Score',
-                    data: perfData,
-                    borderColor: '#22c55e',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#22c55e',
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true, max: 100, ticks: { color: '#a3bfdb' }, grid: { color: 'rgba(255, 255, 255, 0.06)' } },
-                    x: { ticks: { color: '#a3bfdb' }, grid: { display: false } }
-                },
-                plugins: {
-                    legend: { display: false }
-                }
-            }
-        });
-    }
-
-    // Professional PDF Report Generator
-    function downloadReport() {
-        // Hide elements the user DOES NOT want in the custom PDF request
-        const actionBtns = document.getElementById('action-buttons');
-        const voiceBtn = document.getElementById('voiceBtn');
-        const techSection = document.getElementById('technique-section'); // 4. REF VIDEO
-        
-        // Grab the tips card using a reliable JS array filter
-        const tipsCards = Array.from(document.querySelectorAll('.card')).filter(el => el.innerHTML.includes('Improvement Tips'));
-        
-        // Handle videos vs snapshots for PDF
-        const videos = document.querySelectorAll('video');
-        const snapshots = document.querySelectorAll('.pdf-snapshot');
-        
-        // Ensure scientific section is visible for the clinical report
-        const scientificSection = document.getElementById('scientific-section');
-        const wasScientificHidden = scientificSection && scientificSection.style.display === 'none';
-        
-        if (actionBtns) actionBtns.style.display = 'none';
-        if (voiceBtn) voiceBtn.style.display = 'none';
-        if (techSection) techSection.style.display = 'none';
-        tipsCards.forEach(el => el.style.display = 'none');
-        
-        videos.forEach(v => v.style.display = 'none');
-        snapshots.forEach(s => s.style.display = 'block');
-        
-        if (wasScientificHidden && scientificSection) {
-            scientificSection.style.display = 'block';
-        }
-        
-        const element = document.querySelector('.fade-in');
-        const opt = {
-            margin:       [10, 10, 10, 10],
-            filename:     'AthleteVision_Clinical_Report.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak:    { mode: 'avoid-all' }
-        };
-        
-        html2pdf().set(opt).from(element).save().then(() => {
-            // Restore elements
-            if (actionBtns) actionBtns.style.display = '';
-            if (voiceBtn) voiceBtn.style.display = '';
-            if (techSection) techSection.style.display = '';
-            tipsCards.forEach(el => el.style.display = '');
-            
-            videos.forEach(v => v.style.display = '');
-            snapshots.forEach(s => s.style.display = 'none');
-            
-            if (wasScientificHidden && scientificSection) {
-                scientificSection.style.display = 'none';
-            }
-        });
-    }
-
-    // Scientific Mode Toggle
-    function toggleScientificMode() {
-        const isChecked = document.getElementById('scientificToggle').checked;
-        const scientificSection = document.getElementById('scientific-section');
-        
-        if (isChecked) {
-            scientificSection.style.display = 'block';
-        } else {
-            scientificSection.style.display = 'none';
-        }
-    }
-
-    // AI Voice Coach using Web Speech API
-    let isPlaying = false;
-    function playVoiceCoach() {
-        if (isPlaying) {
-            window.speechSynthesis.cancel();
-            document.getElementById('voiceBtn').innerHTML = '🔊 Listen to Coach';
-            isPlaying = false;
-            return;
-        }
-        
-        const tipsText = `
-            Here is your AI Coach Insight. 
-            Issue: {{ feedback_parts[0].split(':')[1] if feedback_parts and feedback_parts|length > 0 and ':' in feedback_parts[0] else (feedback_parts[0] if feedback_parts else "") }}.
-            Fix: {{ feedback_parts[1].split(':')[1] if feedback_parts and feedback_parts|length > 1 and ':' in feedback_parts[1] else (feedback_parts[1] if feedback_parts and feedback_parts|length > 1 else "") }}.
-            Why this matters: {{ feedback_parts[2].split(':')[1] if feedback_parts and feedback_parts|length > 2 and ':' in feedback_parts[2] else (feedback_parts[2] if feedback_parts and feedback_parts|length > 2 else "") }}.
-            Try this drill: {{ feedback_parts[3].split(':')[1] if feedback_parts and feedback_parts|length > 3 and ':' in feedback_parts[3] else (feedback_parts[3] if feedback_parts and feedback_parts|length > 3 else "") }}.
-        `;
-        
-        const utterance = new SpeechSynthesisUtterance(tipsText);
-        utterance.rate = 0.95; // Slightly slower for clarity
-        utterance.pitch = 1.05; // Slightly energetic
-        
-        utterance.onend = () => {
-            document.getElementById('voiceBtn').innerHTML = '🔊 Listen to Coach';
-            isPlaying = false;
-        };
-        
-        window.speechSynthesis.speak(utterance);
-        document.getElementById('voiceBtn').innerHTML = '⏹️ Stop Coach';
-        isPlaying = true;
-    }
-</script>
 
 {% endblock %}

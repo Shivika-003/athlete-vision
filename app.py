@@ -12,6 +12,7 @@ from ai_engine.pose_analyzer import process_video
 from ai_engine.comparison_engine import compare_user_with_reference, serialize_comparison, deserialize_comparison
 from ai_engine.feedback_generator import generate_feedback, format_feedback_for_display
 from ai_engine.reference_builder import seed_reference_from_json, get_active_reference_player, get_reference_summary
+from ai_engine.match_analyzer import process_match_video
 
 app = Flask(__name__)
 
@@ -48,6 +49,14 @@ def load_user(user_id):
 # ─── Initialize DB & Seed Reference Data ───
 with app.app_context():
     db.create_all()
+    
+    # Auto-reset stuck 'processing' records from previous crashes
+    stuck = VideoRecord.query.filter_by(status='processing').all()
+    if stuck:
+        print(f"[Startup] Resetting {len(stuck)} stuck 'processing' records to 'failed'")
+        for r in stuck:
+            r.status = 'failed'
+        db.session.commit()
     
     # Create required directories
     for folder in ['uploads', 'processed', 'reference_videos']:
@@ -235,6 +244,28 @@ def worker_process_video(record_id, app_instance, upload_path, processed_filenam
                 record.status = 'failed'
                 db.session.commit()
 
+def worker_process_match_video(record_id, app_instance, upload_path, processed_filename, processed_folder, player1_name="Player 1", player2_name="Player 2"):
+    """Background thread that runs the 3.0 Professional Match Tracking Pipeline."""
+    with app_instance.app_context():
+        try:
+            results = process_match_video(upload_path, processed_filename, processed_folder, player1_name, player2_name)
+            
+            record = VideoRecord.query.get(record_id)
+            if record:
+                record.processed_video_path = results.get('processed_video_filename')
+                record.shot_type = "Match Analysis"
+                record.status = 'completed'
+                db.session.commit()
+                
+        except Exception as e:
+            print(f"[Match Worker Error] {e}")
+            import traceback
+            traceback.print_exc()
+            record = VideoRecord.query.get(record_id)
+            if record:
+                record.status = 'failed'
+                db.session.commit()
+
 
 # ═══════════════════════════════════════════════════════
 # CORE APP ROUTES
@@ -327,10 +358,21 @@ def upload_video():
     db.session.add(new_record)
     db.session.commit()
     
+    analysis_mode = request.form.get('analysis_mode', 'single')
+    player1_name = request.form.get('player1_name', '').strip() or 'Player 1'
+    player2_name = request.form.get('player2_name', '').strip() or 'Player 2'
+    
     processed_filename = f"processed_{filename}"
-    thread = threading.Thread(target=worker_process_video, args=(
-        new_record.id, app, upload_path, processed_filename, app.config['PROCESSED_FOLDER']
-    ))
+    
+    if analysis_mode == 'match':
+        thread = threading.Thread(target=worker_process_match_video, args=(
+            new_record.id, app, upload_path, processed_filename, app.config['PROCESSED_FOLDER'], player1_name, player2_name
+        ))
+    else:
+        thread = threading.Thread(target=worker_process_video, args=(
+            new_record.id, app, upload_path, processed_filename, app.config['PROCESSED_FOLDER']
+        ))
+        
     thread.start()
     
     flash('Your video has been uploaded and is being analyzed by the AI!')
@@ -343,52 +385,7 @@ def analysis(record_id):
     if record.user_id != current_user.id:
         return redirect(url_for('dashboard'))
     
-    # Deserialize comparison data
-    comparison = deserialize_comparison(record.comparison_details)
-    ref_player = get_active_reference_player()
-    
-    # Historical data for PDF Report
-    records = VideoRecord.query.filter_by(user_id=current_user.id, status='completed').order_by(VideoRecord.upload_date.desc()).all()
-    
-    # Training streak
-    import datetime
-    from collections import defaultdict
-    dates = sorted(set(r.upload_date.date() for r in records))
-    streak = 0
-    today = datetime.date.today()
-    for i in range(len(dates) - 1, -1, -1):
-        if dates[i] >= today - datetime.timedelta(days=streak + 1):
-            streak += 1
-        else:
-            break
-            
-    # Chart data
-    daily_scores = defaultdict(list)
-    for r in records:
-        if r.performance_score:
-            day_str = r.upload_date.strftime('%Y-%m-%d')
-            daily_scores[day_str].append(r.performance_score)
-            
-    chart_labels = []
-    chart_data = []
-    for day in sorted(daily_scores.keys()): 
-        formatted_day = datetime.datetime.strptime(day, '%Y-%m-%d').strftime('%b %d')
-        chart_labels.append(formatted_day)
-        avg = sum(daily_scores[day]) / len(daily_scores[day])
-        chart_data.append(round(avg, 1))
-        
-    avg_similarity = round(sum(r.similarity_score for r in records if r.similarity_score) / len(records), 1) if len(records) > 0 else 0
-    
-    return render_template('analysis.html', 
-        record=record, 
-        comparison=comparison,
-        ref_player=ref_player,
-        streak=streak,
-        chart_labels=chart_labels,
-        chart_data=chart_data,
-        avg_similarity=avg_similarity,
-        user_records=records
-    )
+    return render_template('analysis.html', record=record)
 
 @app.route('/compare')
 @login_required

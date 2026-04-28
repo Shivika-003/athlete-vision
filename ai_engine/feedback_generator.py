@@ -92,7 +92,7 @@ def generate_feedback(comparison_data):
     return {
         'issue': "".join(combined_issue), # Join with empty string as items already have space if needed
         'fix': "".join(combined_fix),
-        'why': " ".join(list(set(combined_why))),
+        'why': " ".join(list(dict.fromkeys(combined_why))),
         'drill': "".join(combined_drill),
         'cue': " & ".join(combined_cue),
         'checkpoint': " ".join(checkpoint_items) + pro_secret_text,

@@ -207,8 +207,8 @@ def calculate_stability(landmarks):
     # Calculate horizontal drift of the head relative to the hips
     drift = abs(nose.x - hip_center_x)
     
-    # Scale: 0 drift = 100%, 0.2 drift = 0%
-    stability_score = max(0, 100 - (drift * 500))
+    # Scale: 0 drift = 100%, 0.33 drift = 0%
+    stability_score = max(0, 100 - (drift * 300))
     return stability_score
 
 
@@ -321,7 +321,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
                     
                     if locked_player_x is None:
                         # First detection: lock onto the LARGEST person
-                        if bbox_h > 0.15:  # Must take up at least 15% of frame height
+                        if bbox_h > 0.05:  # Must take up at least 5% of frame height (lowered for zoomed out videos)
                             locked_player_x = center_x
                             locked_player_size = bbox_h
                             print(f"[PoseAnalyzer] Locked onto player at x={center_x:.2f}, size={bbox_h:.2f}")
@@ -595,7 +595,12 @@ def process_video(input_path, output_filename, output_dir="processed"):
     hip_score = min(100, max(20, contact_angles.get('shoulder', 0) / 1.8)) if contact_angles.get('shoulder') else 50
     
     # Normalize final score to 0-100
-    final_score = min(100, max(0, final_score / 1.5))
+    # When reference comparison is available, scores are already 0-100
+    # When no reference, scores can exceed 100 due to extension-based scoring
+    if not ref_angles:
+        final_score = min(100, max(0, final_score / 1.5))
+    else:
+        final_score = min(100, max(0, final_score))
     
     # ─── Generate feedback text (backward compatible format) ───
     worst_angles = worst_frame.get('angles', {}) or {}
@@ -615,7 +620,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
     combined_timestamps = f"{best_timestamp}|{worst_timestamp}"
     
     # Check for low FPS warning
-    if 'fps' in locals() and fps < 55:
+    if fps < 55:
         feedback_text += " | ⚠️ Low Accuracy Warning: Your video is under 60fps. Fast racket swings and wrist angles may suffer from motion blur. For professional accuracy, film in 60fps."
         
     # ─── Calculate Stability & Speed ───

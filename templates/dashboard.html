@@ -49,8 +49,6 @@
         </div>
     </div>
 
-    </div>
-
     <!-- ═══════════ SKILL MATRIX (NEW) ═══════════ -->
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem; display: flex; gap: 2rem; align-items: center;">
         <div style="flex: 1;">
@@ -87,39 +85,69 @@
         </div>
     </div>
 
-    <!-- ═══════════ UPLOAD & LIVE SECTION ═══════════ -->
+    <!-- ═══════════ UPLOAD SECTION ═══════════ -->
     <div class="upload-container card">
-        <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">Analyze Performance</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload a new badminton video or use Live Webcam for AI analysis.</p>
+        <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">🤖 Upload Video for AI Analysis</h2>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload any badminton video — the AI will detect players, draw bounding boxes, and analyze every shot.</p>
         
-        <!-- CALIBRATION GUIDE -->
-        <div style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <!-- MODE SELECTOR TOGGLE -->
+        <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 14px; padding: 0.35rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+            <button type="button" id="modeBtn_single" onclick="setAnalysisMode('single')"
+                style="flex: 1; padding: 0.7rem 1.25rem; border: none; border-radius: 11px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);">
+                🏸 Analyze My Form
+            </button>
+            <button type="button" id="modeBtn_match" onclick="setAnalysisMode('match')"
+                style="flex: 1; padding: 0.7rem 1.25rem; border: none; border-radius: 11px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; background: transparent; color: var(--text-muted);">
+                👥 Match Analysis
+            </button>
+        </div>
+
+        <!-- CALIBRATION GUIDE (changes per mode) -->
+        <div id="guide_single" style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
             <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Camera Angle</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film exactly from a <strong>Side Profile</strong>. Place camera on a tripod at <strong>Waist Height</strong>.</p>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Close-Up View</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film yourself playing from the side. Make sure your <strong>full body</strong> is visible.</p>
             </div>
             <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">⚡ Frame Rate</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure good lighting and upload <strong>60 FPS</strong> footage for optimal joint tracking.</p>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🏸 Show Your Shots</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Include clear smash, drive, or drop shots. The AI will detect and classify each one.</p>
             </div>
             <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🧍 Body Frame</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure the player's <strong>full body</strong> (feet to racket extension) is visible at all times.</p>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">📐 Bounding Boxes</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">The AI draws <strong>blue bounding boxes</strong> around you and analyzes joint angles at contact.</p>
+            </div>
+        </div>
+        <div id="guide_match" style="display: none; background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Full Court View</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film from a <strong>high angle</strong> showing the <strong>full court</strong> with both players visible.</p>
+            </div>
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">👥 Two Players</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure <strong>both players</strong> are visible throughout the rally for accurate tracking.</p>
+            </div>
+            <div>
+                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🏸 Match Tracking</h4>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">AI draws <strong>orange/yellow boxes</strong> around each player with live shot classification.</p>
             </div>
         </div>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-            <!-- Upload Box -->
-            <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
-                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="height: 100%;">
-                    <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag video to upload</p>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM. <br>Max length 15 seconds.</p>
-                    <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="this.form.submit()">
-                </div>
-            </form>
+        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
+            <input type="hidden" name="analysis_mode" id="analysis_mode_input" value="single">
+            <input type="hidden" name="player_coords" id="player_coords_input">
+            <div id="matchPlayerNames" style="display: none; gap: 1rem; margin-bottom: 1rem;">
+                <input type="text" name="player1_name" placeholder="Name for Bottom Player (e.g. You)" style="flex: 1; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text-main);">
+                <input type="text" name="player2_name" placeholder="Name for Top Player (e.g. Opponent)" style="flex: 1; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text-main);">
+            </div>
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p id="uploadLabel" style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
+                <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="document.getElementById('uploadForm').submit()">
+            </div>
+        </form>
             
             <!-- Live Camera Box -->
             <div class="upload-area" id="live-cam-zone" style="background: rgba(244, 114, 182, 0.03); border-color: rgba(244, 114, 182, 0.35); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem;">
@@ -206,14 +234,20 @@
                             <span style="font-size: 0.9rem; font-weight: 600; color: red;">Failed</span>
                         {% else %}
                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+                                {% if record.shot_type == 'Match Analysis' %}
+                                <span style="font-size: 1.1rem; font-weight: 800; color: var(--accent-cyan);">🤖 Match AI</span>
+                                {% else %}
                                 {% if record.similarity_score %}
                                 <span style="font-size: 1.1rem; font-weight: 800; color: {% if record.similarity_score > 80 %}#4ade80{% elif record.similarity_score > 60 %}#fbbf24{% else %}#f87171{% endif %};">
                                     {{ "%.0f"|format(record.similarity_score) }}% match
                                 </span>
                                 {% endif %}
+                                {% if record.performance_score is not none %}
                                 <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
                                     Score: {{ "%.1f"|format(record.performance_score) }}%
                                 </span>
+                                {% endif %}
+                                {% endif %}
                             </div>
                             <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 0.5rem;">
                                 <a href="{{ url_for('analysis', record_id=record.id) }}" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem; font-weight: 600;">View Full</a>
@@ -243,6 +277,42 @@
             setTimeout(function() { window.location.reload(); }, 8000);
         }
     })();
+
+    // ═══════ ANALYSIS MODE TOGGLE ═══════
+    function setAnalysisMode(mode) {
+        document.getElementById('analysis_mode_input').value = mode;
+        
+        const singleBtn = document.getElementById('modeBtn_single');
+        const matchBtn = document.getElementById('modeBtn_match');
+        const guideSingle = document.getElementById('guide_single');
+        const guideMatch = document.getElementById('guide_match');
+        const playerNames = document.getElementById('matchPlayerNames');
+        const uploadLabel = document.getElementById('uploadLabel');
+        
+        if (mode === 'match') {
+            matchBtn.style.background = 'linear-gradient(135deg, var(--accent-pink), #e04590)';
+            matchBtn.style.color = 'white';
+            matchBtn.style.boxShadow = '0 4px 12px rgba(244, 114, 182, 0.3)';
+            singleBtn.style.background = 'transparent';
+            singleBtn.style.color = 'var(--text-muted)';
+            singleBtn.style.boxShadow = 'none';
+            guideSingle.style.display = 'none';
+            guideMatch.style.display = 'grid';
+            playerNames.style.display = 'flex';
+            uploadLabel.textContent = 'Click or drag match video to upload';
+        } else {
+            singleBtn.style.background = 'linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue))';
+            singleBtn.style.color = 'white';
+            singleBtn.style.boxShadow = '0 4px 12px rgba(0, 212, 255, 0.3)';
+            matchBtn.style.background = 'transparent';
+            matchBtn.style.color = 'var(--text-muted)';
+            matchBtn.style.boxShadow = 'none';
+            guideSingle.style.display = 'grid';
+            guideMatch.style.display = 'none';
+            playerNames.style.display = 'none';
+            uploadLabel.textContent = 'Click or drag your video to upload';
+        }
+    }
 
     // Logic for Compare Checkboxes (max 2)
     function updateCompareButton() {

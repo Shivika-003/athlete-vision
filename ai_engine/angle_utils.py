@@ -194,21 +194,14 @@ def calculate_all_angles(landmarks, side='right'):
         side: 'right' or 'left' for dominant hand
         
     Returns:
-        dict with angle values, or None if critical landmarks are missing.
-        Example: {'shoulder': 145.2, 'elbow': 162.3, 'wrist': 155.1, 'knee': 130.5, 'ankle': 95.2}
+        dict with angle values (None for joints with insufficient visibility).
+        Returns None only if NO joints could be calculated.
+        Example: {'shoulder': 145.2, 'elbow': 162.3, 'wrist': None, 'knee': 130.5, 'ankle': 95.2}
     """
     definitions = JOINT_ANGLE_DEFINITIONS if side == 'right' else JOINT_ANGLE_DEFINITIONS_LEFT
     
     angles = {}
-    all_joint_ids = set()
-    for joint_name, (a_id, b_id, c_id) in definitions.items():
-        all_joint_ids.update([a_id, b_id, c_id])
-    
-    # Check that critical landmarks are visible
-    for jid in all_joint_ids:
-        pt = get_landmark_3d(landmarks, jid)
-        if pt is None:
-            return None  # Key landmark not visible enough
+    any_valid = False
     
     for joint_name, (a_id, b_id, c_id) in definitions.items():
         a = get_landmark_3d(landmarks, a_id, min_visibility=0.3)
@@ -219,8 +212,9 @@ def calculate_all_angles(landmarks, side='right'):
             angles[joint_name] = None
         else:
             angles[joint_name] = round(calculate_angle_3d(a, b, c), 1)
+            any_valid = True
     
-    return angles
+    return angles if any_valid else None
 
 
 # =====================================================================
@@ -233,6 +227,8 @@ class KalmanSmoother:
     This is highly superior to simple EMA for fast-moving joints (like wrists in badminton).
     Uses a 2D state vector [angle, angular_velocity] for each joint.
     """
+    
+    MAX_COVARIANCE = 1e4  # Prevent covariance explosion during prolonged dropout
     
     def __init__(self, process_variance=1e-2, measurement_variance=0.08):
         self.process_variance = process_variance
@@ -254,6 +250,9 @@ class KalmanSmoother:
                     x[0] += x[1]
                     P[0][0] += P[1][1] + self.process_variance
                     P[1][1] += self.process_variance
+                    # Cap covariance to prevent divergence
+                    P[0][0] = min(P[0][0], self.MAX_COVARIANCE)
+                    P[1][1] = min(P[1][1], self.MAX_COVARIANCE)
                     smoothed[joint_name] = round(x[0], 1)
                 else:
                     smoothed[joint_name] = None
