@@ -320,21 +320,25 @@ def process_video(input_path, output_filename, output_dir="processed"):
                     center_x = (min(xs) + max(xs)) / 2.0
                     
                     if locked_player_x is None:
-                        # First detection: lock onto the LARGEST person
-                        if bbox_h > 0.05:  # Must take up at least 5% of frame height (lowered for zoomed out videos)
+                        # First detection: lock onto the LARGEST person (closest to camera)
+                        max_y = max(ys)
+                        # Require the player to be relatively large (>15% of screen) OR near the bottom (max_y > 0.6)
+                        if bbox_h > 0.15 or (bbox_h > 0.05 and max_y > 0.6):
                             locked_player_x = center_x
                             locked_player_size = bbox_h
-                            print(f"[PoseAnalyzer] Locked onto player at x={center_x:.2f}, size={bbox_h:.2f}")
+                            print(f"[PoseAnalyzer] Locked onto player at x={center_x:.2f}, max_y={max_y:.2f}, size={bbox_h:.2f}")
                         else:
                             frame_idx += 1
                             continue
                     else:
-                        # Subsequent frames: reject if this is a different person
-                        if abs(center_x - locked_player_x) > PLAYER_LOCK_TOLERANCE:
-                            # This is probably the opponent, skip
+                        max_y = max(ys)
+                        # Reject if this detection looks like the opponent (far away, small, top of screen)
+                        # and is far from our locked horizontal position.
+                        if bbox_h < 0.15 and max_y < 0.5 and abs(center_x - locked_player_x) > 0.2:
+                            # This is almost certainly the opponent, skip
                             frame_idx += 1
                             continue
-                        # Update locked position with slight smoothing
+                        # Update locked position with slight smoothing (allow the lock to follow the player)
                         locked_player_x = locked_player_x * 0.8 + center_x * 0.2
                 
                 # Check overall visibility
