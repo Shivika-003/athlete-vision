@@ -1,15 +1,61 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="card" style="max-width: 600px; margin: 0 auto; padding: 3rem;">
-        <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">Athlete Profile</h2>
-        <p style="color: var(--text-muted); margin-bottom: 2rem;">Manage your player details.</p>
+<div class="fade-in" style="max-width: 800px; margin: 0 auto;">
+
+    <!-- PROFILE HEADER -->
+    <div class="card" style="margin-bottom: 2rem; overflow: hidden; position: relative;">
+        <!-- Accent stripe -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink), var(--accent-gold));"></div>
+        
+        <div style="display: flex; align-items: center; gap: 2rem; padding-top: 1rem; flex-wrap: wrap;">
+            <!-- Avatar -->
+            <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink)); display: flex; align-items: center; justify-content: center; font-size: 2.8rem; box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3); flex-shrink: 0;">
+                {{ user.username[0]|upper if user.username else '?' }}
+            </div>
+            <div style="flex: 1;">
+                <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem; color: var(--text-main);">{{ user.username }}</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    {{ user.current_level or 'Level not set' }} · {{ user.play_style or 'Play style not set' }}
+                </p>
+                {% if user.training_goal %}
+                <p style="color: var(--accent-cyan); font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600;">
+                    🎯 Goal: {{ user.training_goal }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <div class="card" style="text-align: center; padding: 1.25rem 1rem;">
+            <p style="font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.25rem;">{{ total_sessions }}</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Sessions</p>
+        </div>
+        <div class="card" style="text-align: center; padding: 1.25rem 1rem;">
+            <p style="font-size: 2rem; font-weight: 800; color: #4ade80; margin-bottom: 0.25rem;">{{ "%.0f"|format(best_score) }}%</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Best Score</p>
+        </div>
+        <div class="card" style="text-align: center; padding: 1.25rem 1rem;">
+            <p style="font-size: 2rem; font-weight: 800; color: var(--accent-cyan); margin-bottom: 0.25rem;">{{ avg_similarity }}%</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Avg Match</p>
+        </div>
+        <div class="card" style="text-align: center; padding: 1.25rem 1rem;">
+            <p style="font-size: 2rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 0.25rem;">{{ streak }}🔥</p>
+            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Streak</p>
+        </div>
+    </div>
+
+    <!-- EDIT FORM -->
+    <div class="card" style="padding: 2.5rem;">
+        <h3 style="margin-bottom: 0.25rem; color: var(--text-main);">Edit Profile</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem;">Update your player details below.</p>
         
         <form method="POST" action="{{ url_for('profile') }}">
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Username</label>
-                <input type="text" disabled value="{{ user.username }}" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Display Name</label>
+                <input type="text" name="username" value="{{ user.username }}" placeholder="Enter your name" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
@@ -51,7 +97,7 @@
                 <textarea name="bio" rows="3" placeholder="Height, Weight, injury history..." style="width: 100%; padding: 0.75rem; border-radius: 8px; resize: vertical;">{{ user.bio or '' }}</textarea>
             </div>
             
-            <button type="submit" class="btn">Save Profile Improvements</button>
+            <button type="submit" class="btn" style="width: 100%; padding: 0.9rem; font-size: 1rem;">Save Profile</button>
         </form>
     </div>
 </div>

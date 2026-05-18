@@ -49,39 +49,51 @@
         </div>
     </div>
 
-    <!-- ═══════════ SKILL MATRIX (NEW) ═══════════ -->
-    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; display: flex; gap: 2rem; align-items: center;">
-        <div style="flex: 1;">
-            <h3 style="color: var(--accent-cyan); margin-bottom: 1rem;">🧬 Biomechanical Skill Matrix</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
-                This hexagon chart maps your overall form across six key biomechanical dimensions compared to professional benchmarks. Focus your training on the dimensions that are lagging behind.
-            </p>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
-                    <span style="color: var(--text-muted);">Shoulder Rotation</span>
-                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: 85%; background: var(--accent-pink);"></div>
+    <!-- ═══════════ ANALYTICS ROW ═══════════ -->
+    <div class="dashboard-grid" style="margin-bottom: 2rem;">
+        
+        <!-- SKILL MATRIX -->
+        <div class="card animate-fade-in-up" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 0;">
+            <div>
+                <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">🧬 Biomechanical Skill Matrix</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem;">
+                    Your averaged form across all sessions. Focus training on lagging dimensions.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
+                        <span style="color: var(--text-muted);">Arm Extension</span>
+                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                            <div style="height: 100%; width: {{ avg_arm }}%; background: var(--accent-pink);"></div>
+                        </div>
+                        <strong style="color: var(--text-main);">{{ avg_arm }}%</strong>
                     </div>
-                    <strong style="color: var(--text-main);">85%</strong>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
-                    <span style="color: var(--text-muted);">Elbow Extension</span>
-                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: 70%; background: var(--accent-cyan);"></div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
+                        <span style="color: var(--text-muted);">Knee Bend</span>
+                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                            <div style="height: 100%; width: {{ avg_knee }}%; background: var(--accent-cyan);"></div>
+                        </div>
+                        <strong style="color: var(--text-main);">{{ avg_knee }}%</strong>
                     </div>
-                    <strong style="color: var(--text-main);">70%</strong>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
-                    <span style="color: var(--text-muted);">Knee Bend Depth</span>
-                    <div style="flex: 1; margin: 0 1rem; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: 92%; background: #22c55e;"></div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
+                        <span style="color: var(--text-muted);">Core Pivot</span>
+                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                            <div style="height: 100%; width: {{ avg_hip }}%; background: #22c55e;"></div>
+                        </div>
+                        <strong style="color: var(--text-main);">{{ avg_hip }}%</strong>
                     </div>
-                    <strong style="color: var(--text-main);">92%</strong>
                 </div>
             </div>
+            <div style="width: 100%; height: 200px; display: flex; justify-content: center; margin-top: auto;">
+                <canvas id="skillMatrixChart"></canvas>
+            </div>
         </div>
-        <div style="width: 300px; height: 300px;">
-            <canvas id="skillMatrixChart"></canvas>
+
+        <!-- SIMILARITY TREND CHART -->
+        <div class="card" style="margin-bottom: 0;">
+            <h3 style="margin-bottom: 1.5rem;">📈 Similarity Trend <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(vs. Pro)</span></h3>
+            <div style="height: 250px;">
+                <canvas id="similarityChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -132,27 +144,25 @@
             </div>
         </div>
         
-        <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm">
-            <input type="hidden" name="analysis_mode" id="analysis_mode_input" value="single">
-            <input type="hidden" name="player_coords" id="player_coords_input">
-            <div id="matchPlayerNames" style="display: none; gap: 1rem; margin-bottom: 1rem;">
-                <input type="text" name="player1_name" placeholder="Name for Bottom Player (e.g. You)" style="flex: 1; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text-main);">
-                <input type="text" name="player2_name" placeholder="Name for Top Player (e.g. Opponent)" style="flex: 1; padding: 0.75rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: var(--text-main);">
-            </div>
-            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-                <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                </svg>
-                <p id="uploadLabel" style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
-                <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="document.getElementById('uploadForm').submit()">
-            </div>
-        </form>
-            
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
+            <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm" style="display: flex; flex-direction: column; height: 100%;">
+                <input type="hidden" name="analysis_mode" id="analysis_mode_input" value="single">
+                <input type="hidden" name="player_coords" id="player_coords_input">
+
+                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
+                    <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p id="uploadLabel" style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
+                    <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="document.getElementById('uploadForm').submit()">
+                </div>
+            </form>
+                
             <!-- Live Camera Box -->
-            <div class="upload-area" id="live-cam-zone" style="background: rgba(244, 114, 182, 0.03); border-color: rgba(244, 114, 182, 0.35); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1rem;">
-                <div id="cam-ui-initial" style="text-align: center; padding: 1rem;">
-                    <svg width="50" height="50" fill="none" stroke="var(--accent-pink)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+            <div class="upload-area" id="live-cam-zone" style="background: rgba(244, 114, 182, 0.03); border-color: rgba(244, 114, 182, 0.35); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; margin: 0; min-height: 250px;">
+                <div id="cam-ui-initial" style="text-align: center;">
+                    <svg width="50" height="50" fill="none" stroke="var(--accent-pink)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
                     <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
@@ -174,26 +184,17 @@
                     <h3 style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--text-main);">Review Shot</h3>
                     <video id="reviewVideo" controls playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1rem; background: #000;"></video>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <button type="button" class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="discardRecording()">🗑️ Discard & Retake</button>
-                        <button type="button" class="btn animate-glow" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="uploadRecording()">🚀 Analyze Video</button>
+                        <button type="button" class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="discardRecording()">🗑️ Discard</button>
+                        <button type="button" class="btn animate-glow" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="uploadRecording()">🚀 Analyze</button>
                     </div>
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
-    <!-- ═══════════ CHARTS + VIDEO LOG ═══════════ -->
-    <div class="dashboard-grid">
-
-        <!-- Similarity Trend Chart (Primary) -->
-        <div class="card">
-            <h3 style="margin-bottom: 1.5rem;">📈 Similarity Trend <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(vs. Pro)</span></h3>
-            <div style="height: 250px;">
-                <canvas id="similarityChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Video Log -->
+    <!-- ═══════════ VIDEO LOG ═══════════ -->
+    <div style="margin-bottom: 2rem;">
         <div class="card" style="display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3>Video Log</h3>
@@ -286,7 +287,6 @@
         const matchBtn = document.getElementById('modeBtn_match');
         const guideSingle = document.getElementById('guide_single');
         const guideMatch = document.getElementById('guide_match');
-        const playerNames = document.getElementById('matchPlayerNames');
         const uploadLabel = document.getElementById('uploadLabel');
         
         if (mode === 'match') {
@@ -298,7 +298,6 @@
             singleBtn.style.boxShadow = 'none';
             guideSingle.style.display = 'none';
             guideMatch.style.display = 'grid';
-            playerNames.style.display = 'flex';
             uploadLabel.textContent = 'Click or drag match video to upload';
         } else {
             singleBtn.style.background = 'linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue))';
@@ -309,7 +308,6 @@
             matchBtn.style.boxShadow = 'none';
             guideSingle.style.display = 'grid';
             guideMatch.style.display = 'none';
-            playerNames.style.display = 'none';
             uploadLabel.textContent = 'Click or drag your video to upload';
         }
     }
@@ -727,10 +725,10 @@
         new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: ['Shoulder Rotation', 'Elbow Ext.', 'Wrist Snap', 'Knee Bend', 'Core Stab.', 'Tempo'],
+                labels: ['Arm Ext.', 'Knee Bend', 'Core Pivot', 'Similarity', 'Performance'],
                 datasets: [{
                     label: 'Your Current Form',
-                    data: [85, 70, 60, 92, 75, 80],
+                    data: [{{ avg_arm }}, {{ avg_knee }}, {{ avg_hip }}, {{ avg_similarity }}, {{ avg_perf }}],
                     backgroundColor: 'rgba(236, 72, 153, 0.2)',
                     borderColor: 'rgba(236, 72, 153, 1)',
                     pointBackgroundColor: 'rgba(236, 72, 153, 1)',

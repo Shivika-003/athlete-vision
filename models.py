@@ -60,6 +60,9 @@ class VideoRecord(db.Model):
     # Full comparison data (JSON string)
     comparison_details = db.Column(db.Text, nullable=True)
 
+    # Added features
+    smash_speed_kmh = db.Column(db.Float, nullable=True)
+
     def __repr__(self):
         return f'<VideoRecord {self.filename} - Score: {self.performance_score}>'
 

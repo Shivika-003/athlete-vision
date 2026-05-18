@@ -12,6 +12,7 @@ import os
 import math
 import collections
 import json
+from ai_engine.shuttle_tracker import estimate_smash_speed
 
 from ai_engine.angle_utils import (
     calculate_angle_3d, get_landmark_3d, get_landmark_2d,
@@ -250,8 +251,8 @@ def process_video(input_path, output_filename, output_dir="processed"):
     original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Resize for processing speed but maintain clarity (640p)
-    max_w = 640
+    # Resize for processing speed but maintain clarity (480p)
+    max_w = 480
     if original_width > max_w:
         scale = max_w / original_width
         width = int(original_width * scale)
@@ -412,8 +413,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
                     'shot_type': shot_type,
                     'side': side,
                     'visibility': avg_vis,
-                    'landmarks': landmarks,
-                    'pose_landmarks': results.pose_landmarks,
+                    # RESOLVED: Removed heavy landmark objects to save RAM
                     # RESOLVED: Removed frame.copy() to save GIGABYTES of RAM
                     'shuttle_pos': shuttlecock_pos,
                     'shuttle_dist': shuttle_dist,
@@ -524,7 +524,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
         mid_point = max(1, len(distinct_shots) // 2)
         if len(distinct_shots) == 1:
             best_frames = distinct_shots
-            worst_frames = distinct_shots
+            worst_frames = []
         else:
             best_frames = distinct_shots[:mid_point]
             worst_frames = distinct_shots[mid_point:]
@@ -532,11 +532,11 @@ def process_video(input_path, output_filename, output_dir="processed"):
         # Fallback if no contact frames
         sorted_frames = sorted(frame_data, key=lambda x: x.get('quality_score', 0), reverse=True)
         best_frames = [sorted_frames[0]] if sorted_frames else []
-        worst_frames = [sorted_frames[-1]] if sorted_frames else []
+        worst_frames = []
 
     # Get single best and worst for the static PDF snapshots
     best_contact = best_frames[0] if best_frames else {'frame_idx': 0, 'quality_score': 0}
-    worst_frame = worst_frames[0] if worst_frames else {'frame_idx': 0, 'quality_score': 0}
+    worst_frame = worst_frames[0] if worst_frames else None
 
     # Sort them chronologically for video generation
     best_frames.sort(key=lambda x: x['frame_idx'])
@@ -544,35 +544,49 @@ def process_video(input_path, output_filename, output_dir="processed"):
 
     # ─── Generate output images (Re-reading from file to save RAM) ───
     best_img_name = f"best_{base_name}.jpg"
-    worst_img_name = f"worst_{base_name}.jpg"
+    worst_img_name = f"worst_{base_name}.jpg" if worst_frame else ""
     
     # Snapshot of the absolute best and absolute worst
-    _save_annotated_snapshot(input_path, os.path.join(output_dir, best_img_name), 
-                             best_contact['frame_idx'], width, height, best_contact)
-    _save_annotated_snapshot(input_path, os.path.join(output_dir, worst_img_name), 
-                             worst_frame['frame_idx'], width, height, worst_frame)
+    if best_frames:
+        _save_annotated_snapshot(input_path, os.path.join(output_dir, best_img_name), 
+                                 best_contact['frame_idx'], width, height, best_contact)
+    if worst_frame:
+        _save_annotated_snapshot(input_path, os.path.join(output_dir, worst_img_name), 
+                                 worst_frame['frame_idx'], width, height, worst_frame)
     
-    snapshot_filename = f"{best_img_name}|{int(best_contact.get('quality_score', 0))}|{worst_img_name}|{int(worst_frame.get('quality_score', 0))}"
+    snapshot_filename = f"{best_img_name}|{int(best_contact.get('quality_score', 0))}|{worst_img_name}|{int(worst_frame.get('quality_score', 0)) if worst_frame else 0}"
     
     # ─── Generate video clips (Re-reading from file to save RAM) ───
     best_video_name = f"best_{base_name}.mp4"
-    worst_video_name = f"worst_{base_name}.mp4"
+    worst_video_name = f"worst_{base_name}.mp4" if worst_frames else ""
     
-    best_chapters = _generate_clip_safe(input_path, best_frames, best_video_name, output_dir, 
-                        fps, width, height, frame_data, skip, ref_angles)
-    worst_chapters = _generate_clip_safe(input_path, worst_frames, worst_video_name, output_dir,
-                        fps, width, height, frame_data, skip, ref_angles)
+    best_chapters = []
+    if best_frames:
+        best_chapters = _generate_clip_safe(input_path, best_frames, best_video_name, output_dir, 
+                            fps, width, height, frame_data, skip, ref_angles)
+    
+    worst_chapters = []
+    if worst_frames:
+        worst_chapters = _generate_clip_safe(input_path, worst_frames, worst_video_name, output_dir,
+                            fps, width, height, frame_data, skip, ref_angles, is_improvement_reel=True)
                         
     # Save chapters to JSON
     best_chapters_file = f"best_chapters_{base_name}.json"
-    worst_chapters_file = f"worst_chapters_{base_name}.json"
-    with open(os.path.join(output_dir, best_chapters_file), 'w') as f:
-        json.dump(best_chapters, f)
-    with open(os.path.join(output_dir, worst_chapters_file), 'w') as f:
-        json.dump(worst_chapters, f)
+    worst_chapters_file = f"worst_chapters_{base_name}.json" if worst_frames else ""
+    
+    if best_frames:
+        with open(os.path.join(output_dir, best_chapters_file), 'w') as f:
+            json.dump(best_chapters, f)
+    if worst_frames:
+        with open(os.path.join(output_dir, worst_chapters_file), 'w') as f:
+            json.dump(worst_chapters, f)
         
     processed_video_filename = f"{best_video_name}|{worst_video_name}"
 
+    # ─── Generate FULL annotated video with blue box ───
+    full_video_name = f"full_{base_name}.mp4"
+    _generate_full_annotated_video(input_path, frame_data, full_video_name, output_dir,
+                                   fps, width, height, skip)
     
     # ─── Collect phase angles for comparison ───
     phase_angles = {}
@@ -607,19 +621,21 @@ def process_video(input_path, output_filename, output_dir="processed"):
         final_score = min(100, max(0, final_score))
     
     # ─── Generate feedback text (backward compatible format) ───
-    worst_angles = worst_frame.get('angles', {}) or {}
+    worst_angles = worst_frame.get('angles', {}) if worst_frame else contact_angles
     feedback_text = _generate_basic_feedback(contact_angles, worst_angles, shot_type)
     
     # ─── Timestamp ───
-    best_time_sec = int(best_contact['frame_idx'] / fps)
+    best_time_sec = int(best_contact['frame_idx'] / fps) if best_contact else 0
     best_mins = best_time_sec // 60
     best_secs = best_time_sec % 60
     best_timestamp = f"{best_mins:02d}:{best_secs:02d}"
 
-    worst_time_sec = int(worst_frame['frame_idx'] / fps)
-    mins = worst_time_sec // 60
-    secs = worst_time_sec % 60
-    worst_timestamp = f"{mins:02d}:{secs:02d}"
+    worst_timestamp = ""
+    if worst_frame:
+        worst_time_sec = int(worst_frame['frame_idx'] / fps)
+        mins = worst_time_sec // 60
+        secs = worst_time_sec % 60
+        worst_timestamp = f"{mins:02d}:{secs:02d}"
     
     combined_timestamps = f"{best_timestamp}|{worst_timestamp}"
     
@@ -631,6 +647,25 @@ def process_video(input_path, output_filename, output_dir="processed"):
     stability_scores = [f.get('stability', 0) for f in frame_data if f.get('phase') in ('swing', 'contact')]
     avg_stability = sum(stability_scores) / len(stability_scores) if stability_scores else 70
     max_wrist_vel = max([f.get('wrist_vel', 0) for f in frame_data if f.get('phase') in ('swing', 'contact')] + [0])
+        
+    # ─── Calculate Smash Speed (New Engine) ───
+    smash_speed_kmh = 0
+    if best_contact and best_contact.get('wrist_vel') and 'locked_player_size' in locals():
+        wrist_px = None # Landmark objects removed to save RAM
+        
+        smash_speed_kmh = estimate_smash_speed(
+            input_path, 
+            best_contact['frame_idx'], 
+            fps, 
+            locked_player_size * height, 
+            wrist_px, 
+            width, 
+            height, 
+            best_contact.get('side', 'right'),
+            max_wrist_vel
+        )
+        
+
     
     best_duration = round(sum(c['duration'] for c in best_chapters), 1)
     worst_duration = round(sum(c['duration'] for c in worst_chapters), 1)
@@ -643,10 +678,12 @@ def process_video(input_path, output_filename, output_dir="processed"):
         "hip_score": round(hip_score, 1),
         "snapshot_filename": snapshot_filename,
         "processed_video_filename": processed_video_filename,
+        "full_video_filename": full_video_name,
         "feedback_text": feedback_text,
         "worst_timestamp": combined_timestamps,
         "stability_score": round(avg_stability, 1),
         "max_wrist_vel": max_wrist_vel,
+        "smash_speed_kmh": smash_speed_kmh,
         
         # Athlete Vision 2.0 fields
         "shot_type": shot_type,
@@ -664,6 +701,114 @@ def process_video(input_path, output_filename, output_dir="processed"):
         "best_duration_sec": best_duration,
         "worst_duration_sec": worst_duration
     }
+
+
+# =====================================================================
+# FULL ANNOTATED VIDEO GENERATOR (Blue Box + Analysis Panel)
+# =====================================================================
+
+def _generate_full_annotated_video(input_path, frame_data, output_name, output_dir,
+                                    fps, width, height, skip_val):
+    """Generate a full-length video with smooth blue bounding box and analysis panel."""
+    out_path = os.path.join(output_dir, output_name)
+    
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    if not writer.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    
+    # Build lookup: frame_idx -> frame_data entry
+    fdata_map = {f['frame_idx']: f for f in frame_data}
+    
+    BLUE = (255, 80, 0)
+    BOX_PADDING = 25
+    SMOOTH_ALPHA = 0.30
+    smooth_box = None
+    last_phase = 'idle'
+    last_shot = 'N/A'
+    
+    cap = cv2.VideoCapture(input_path)
+    fi = 0
+    
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        if frame.shape[1] != width:
+            frame = cv2.resize(frame, (width, height))
+        
+        # Check if we have analysis data for this frame
+        fdata = fdata_map.get(fi)
+        
+        if fdata and fdata.get('angles'):
+            last_phase = fdata.get('phase', last_phase)
+            last_shot = fdata.get('shot_type', last_shot)
+            
+        # Interpolate every frame towards target_box
+        if 'target_box' in locals():
+            if smooth_box is None:
+                smooth_box = target_box
+            else:
+                smooth_box = tuple(
+                    int(smooth_box[i] * (1 - SMOOTH_ALPHA) + target_box[i] * SMOOTH_ALPHA)
+                    for i in range(4)
+                )
+        
+        # Draw blue box
+        if smooth_box:
+            a, b, c, d = smooth_box
+            # Semi-transparent fill
+            ov = frame.copy()
+            cv2.rectangle(ov, (a, b), (c, d), BLUE, -1)
+            cv2.addWeighted(ov, 0.10, frame, 0.90, 0, frame)
+            # Border
+            cv2.rectangle(frame, (a, b), (c, d), BLUE, 3)
+            cv2.putText(frame, "PLAYER", (a, max(0, b - 12)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, BLUE, 2, cv2.LINE_AA)
+            
+            # Right-side analysis panel (zoomed crop)
+            crop_w = c - a
+            crop_h = d - b
+            if crop_w > 20 and crop_h > 20:
+                player_crop = frame[b:d, a:c].copy()
+                PANEL_W = min(140, int(width * 0.18))
+                PANEL_H = int(PANEL_W * crop_h / crop_w)
+                PANEL_H = min(PANEL_H, int(height * 0.45))
+                if PANEL_H > 20:
+                    player_scaled = cv2.resize(player_crop, (PANEL_W, PANEL_H))
+                    px1 = width - PANEL_W - 10
+                    py1 = 10
+                    # Dark background
+                    cv2.rectangle(frame, (px1 - 3, py1 - 22), (px1 + PANEL_W + 3, py1 + PANEL_H + 3), (0, 0, 0), -1)
+                    frame[py1:py1 + PANEL_H, px1:px1 + PANEL_W] = player_scaled
+                    cv2.rectangle(frame, (px1 - 3, py1 - 22), (px1 + PANEL_W + 3, py1 + PANEL_H + 3), BLUE, 2)
+                    cv2.putText(frame, "ANALYSIS", (px1 + 2, py1 - 6),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, BLUE, 1, cv2.LINE_AA)
+                    
+                    # Shot info below panel
+                    info_y = py1 + PANEL_H + 20
+                    # Prevent text from overflowing right edge
+                    text_x_pos = px1 - 10 
+                    
+                    # Black Drop Shadow
+                    cv2.putText(frame, f"Phase: {last_phase}", (text_x_pos+1, info_y+1),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 2, cv2.LINE_AA)
+                    cv2.putText(frame, f"Shot: {last_shot}", (text_x_pos+1, info_y + 21),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 2, cv2.LINE_AA)
+                    # Neon Yellow Text
+                    cv2.putText(frame, f"Phase: {last_phase}", (text_x_pos, info_y),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(frame, f"Shot: {last_shot}", (text_x_pos, info_y + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1, cv2.LINE_AA)
+        
+        writer.write(frame)
+        fi += 1
+    
+    cap.release()
+    writer.release()
+    print(f"[PoseAnalyzer] Full annotated video saved: {output_name} ({fi} frames)")
 
 
 # =====================================================================
@@ -693,27 +838,15 @@ def _save_annotated_snapshot(input_path, output_path, frame_idx, width, height, 
     ret, frame = cap.read()
     if ret:
         frame = cv2.resize(frame, (width, height))
-        if fdata.get('pose_landmarks'):
-            # Removed pink skeleton line, using only blue bounding box
-            xs = [lm.x for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
-            ys = [lm.y for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
-            if xs and ys:
-                min_x, max_x = int(min(xs) * width), int(max(xs) * width)
-                min_y, max_y = int(min(ys) * height), int(max(ys) * height)
-                padding = 20
-                cv2.rectangle(frame, (max(0, min_x - padding), max(0, min_y - padding)),
-                              (min(width, max_x + padding), min(height, max_y + padding)),
-                              (255, 0, 0), 2)  # Blue Box
-                cv2.putText(frame, "USER", (max(0, min_x - padding), max(0, min_y - padding - 10)),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                            
+        if fdata.get('angles'):
+            pass  # Landmarks removed, skipping skeleton redraw
         cv2.imwrite(output_path, frame)
     cap.release()
 
 
 def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
-                       fps, width, height, frame_data, skip_val, ref_angles=None):
-    """Memory-safe multi-clip generator: Re-reads only short windows around each target frame."""
+                       fps, width, height, frame_data, skip_val, ref_angles=None, is_improvement_reel=False):
+    """Memory-safe multi-clip generator with freeze-frame highlights at contact points."""
     
     fourcc = cv2.VideoWriter_fourcc(*'avc1')
     clip_fps = fps # Normal playback speed for smooth viewing
@@ -721,73 +854,123 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
         os.path.join(output_dir, output_name), fourcc,
         clip_fps, (width, height)
     )
+    if not writer.isOpened():
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = cv2.VideoWriter(
+            os.path.join(output_dir, output_name), fourcc,
+            clip_fps, (width, height)
+        )
     
     cap = cv2.VideoCapture(input_path)
     
-    last_bbox = None # Box hold algorithm state
-    trail_points = collections.deque(maxlen=20) # Kinetic Swing Trail
-
     chapters = []
     current_time_sec = 0.0
     
-    for idx, target_frame in enumerate(target_frames):
-        target_idx = target_frame['frame_idx']
-        window = int(fps * 0.75)  # 0.75 seconds around contact (1.5 seconds per shot)
-        start_f = max(0, target_idx - window)
-        end_f = target_idx + window
-        
-        fdata_map = {f['frame_idx']: f for f in frame_data if start_f <= f['frame_idx'] <= end_f}
-        
-        cap.set(cv2.CAP_PROP_POS_FRAMES, start_f)
-        
-        curr_idx = start_f
-        frames_written = 0
-        while curr_idx <= end_f:
-            ret, frame = cap.read()
-            if not ret: break
-            
-            frame = cv2.resize(frame, (width, height))
-            fdata = fdata_map.get(curr_idx)
-            
-            if fdata and fdata.get('pose_landmarks'):
-                # Update box hold
-                xs = [lm.x for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
-                ys = [lm.y for lm in fdata['pose_landmarks'].landmark if lm.visibility > 0.3]
-                
-                # Track wrist for Kinetic Trail
-                wrist_idx = mp_pose.PoseLandmark.RIGHT_WRIST.value
-                wrist_lm = fdata['pose_landmarks'].landmark[wrist_idx]
-                if wrist_lm.visibility > 0.3:
-                    trail_points.append((int(wrist_lm.x * width), int(wrist_lm.y * height)))
-                
-                if xs and ys:
-                    min_x, max_x = int(min(xs) * width), int(max(xs) * width)
-                    min_y, max_y = int(min(ys) * height), int(max(ys) * height)
-                    padding = 20
-                    last_bbox = (max(0, min_x - padding), max(0, min_y - padding), 
-                                 min(width, max_x + padding), min(height, max_y + padding))
-            
-            # Draw the box from the "box hold" state to ensure smoothness
-            if last_bbox:
-                cv2.rectangle(frame, (last_bbox[0], last_bbox[1]), (last_bbox[2], last_bbox[3]), (255, 0, 0), 2)
-                cv2.putText(frame, "USER", (last_bbox[0], last_bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                
-            # Flash the "CONTACT POINT" text
-            if abs(curr_idx - target_idx) <= max(1, int(fps * 0.15)):
-                cv2.putText(frame, "CONTACT POINT", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-                
-            writer.write(frame)
-            curr_idx += 1
-            frames_written += 1
-            
-        duration_sec = frames_written / clip_fps
-        chapters.append({
-            "shot_index": idx + 1,
-            "start_time": round(current_time_sec, 2),
-            "end_time": round(current_time_sec + duration_sec, 2),
-            "duration": round(duration_sec, 2)
+    active_windows = []
+    window_frames = int(fps * 0.75)
+    for idx, tf in enumerate(target_frames):
+        target_idx = tf['frame_idx']
+        active_windows.append({
+            'shot_index': idx + 1,
+            'target_idx': target_idx,
+            'start_f': max(0, target_idx - window_frames),
+            'end_f': target_idx + window_frames,
+            'target_frame': tf,
+            'frames_written': 0
         })
-        current_time_sec += duration_sec
+    
+    active_windows.sort(key=lambda x: x['start_f'])
+    
+    curr_idx = 0
+    while cap.isOpened() and active_windows:
+        ret, frame = cap.read()
+        if not ret: break
+        
+        w = active_windows[0]
+        
+        if curr_idx >= w['start_f'] and curr_idx <= w['end_f']:
+            write_frame = cv2.resize(frame, (width, height))
+            
+            if abs(curr_idx - w['target_idx']) <= max(1, int(fps * 0.15)):
+                cv2.putText(write_frame, "CONTACT POINT", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                
+            writer.write(write_frame)
+            w['frames_written'] += 1
+            
+            if curr_idx == w['target_idx']:
+                freeze_frame = write_frame.copy()
+                score = w['target_frame'].get('quality_score', 0)
+                angles = w['target_frame'].get('angles', {})
+                
+                def draw_text_shadow(img, text, pos, font, scale, color, thick):
+                    cv2.putText(img, text, (pos[0]+1, pos[1]+1), font, scale, (0, 0, 0), thick+1, cv2.LINE_AA)
+                    cv2.putText(img, text, pos, font, scale, color, thick, cv2.LINE_AA)
+                
+                pad = 12
+                box_w = int(width * 0.32)
+                box_h = 120 if is_improvement_reel else 70
+                box_x1 = width - box_w - pad
+                box_y1 = pad
+                box_x2 = width - pad
+                box_y2 = pad + box_h
+                
+                overlay = freeze_frame.copy()
+                cv2.rectangle(overlay, (box_x1, box_y1), (box_x2, box_y2), (30, 30, 30), -1)
+                cv2.addWeighted(overlay, 0.7, freeze_frame, 0.3, 0, freeze_frame)
+                cv2.rectangle(freeze_frame, (box_x1, box_y1), (box_x2, box_y2), (80, 80, 80), 1, cv2.LINE_AA)
+                
+                text_x = box_x1 + 10
+                text_y = box_y1 + 22
+                
+                if is_improvement_reel:
+                    issue = "Check overall posture."
+                    if angles.get('elbow', 0) < 130: issue = "Elbow is dropping!"
+                    elif angles.get('knee', 0) > 165: issue = "Knees are too stiff!"
+                    elif angles.get('shoulder', 0) < 110: issue = "Arm not extended!"
+                    elif angles.get('wrist', 0) < 120: issue = "Wrist snap is weak."
+                    
+                    draw_text_shadow(freeze_frame, "IMPROVEMENT", (text_x, text_y), 
+                                     cv2.FONT_HERSHEY_DUPLEX, 0.55, (80, 80, 255), 1)
+                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 28), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+                    draw_text_shadow(freeze_frame, "Error:", (text_x, text_y + 58), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 165, 255), 1)
+                    draw_text_shadow(freeze_frame, issue, (text_x, text_y + 82), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                else:
+                    draw_text_shadow(freeze_frame, "EXCELLENT FORM", (text_x, text_y), 
+                                     cv2.FONT_HERSHEY_DUPLEX, 0.55, (0, 255, 0), 1)
+                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 28), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+                
+                freeze_duration_frames = int(fps * 1.5)
+                for _ in range(freeze_duration_frames):
+                    writer.write(freeze_frame)
+                    w['frames_written'] += 1
+            
+            if curr_idx == w['end_f']:
+                duration_sec = w['frames_written'] / clip_fps
+                chapters.append({
+                    "shot_index": w['shot_index'],
+                    "start_time": round(current_time_sec, 2),
+                    "end_time": round(current_time_sec + duration_sec, 2),
+                    "duration": round(duration_sec, 2)
+                })
+                current_time_sec += duration_sec
+                active_windows.pop(0)
+                
+        elif curr_idx > w['end_f']:
+            duration_sec = w['frames_written'] / clip_fps
+            chapters.append({
+                "shot_index": w['shot_index'],
+                "start_time": round(current_time_sec, 2),
+                "end_time": round(current_time_sec + duration_sec, 2),
+                "duration": round(duration_sec, 2)
+            })
+            current_time_sec += duration_sec
+            active_windows.pop(0)
+            
+        curr_idx += 1
             
     cap.release()
     writer.release()

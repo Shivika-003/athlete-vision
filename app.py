@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_mail import Mail, Message
 from models import db, VideoRecord, User, ReferencePlayer, ReferenceShotData
+from sqlalchemy.exc import IntegrityError
 from ai_engine.pose_analyzer import process_video
 from ai_engine.comparison_engine import compare_user_with_reference, serialize_comparison, deserialize_comparison
 from ai_engine.feedback_generator import generate_feedback, format_feedback_for_display
@@ -162,16 +163,43 @@ def reset_password():
 @login_required
 def profile():
     if request.method == 'POST':
+        new_username = request.form.get('username', '').strip()
+        if new_username and new_username != current_user.username:
+            current_user.username = new_username
         current_user.sport = request.form.get('sport')
         current_user.play_style = request.form.get('play_style')
         current_user.current_level = request.form.get('current_level')
         current_user.racket_brand = request.form.get('racket_brand')
         current_user.training_goal = request.form.get('training_goal')
         current_user.bio = request.form.get('bio')
-        db.session.commit()
-        flash('Profile updated!')
+        try:
+            db.session.commit()
+            flash('Profile updated!')
+        except IntegrityError:
+            db.session.rollback()
+            flash('That Display Name is already taken. Please choose another one.', 'error')
         return redirect(url_for('profile'))
-    return render_template('profile.html', user=current_user)
+    
+    # Compute profile stats
+    records = VideoRecord.query.filter_by(user_id=current_user.id).all()
+    completed = [r for r in records if r.status == 'completed']
+    total_sessions = len(completed)
+    best_score = max((r.performance_score for r in completed if r.performance_score), default=0)
+    avg_sim = round(sum(r.similarity_score for r in completed if r.similarity_score) / len(completed), 1) if completed else 0
+    
+    import datetime
+    dates = sorted(set(r.upload_date.date() for r in records if r.status == 'completed'))
+    streak = 0
+    today = datetime.date.today()
+    for i in range(len(dates) - 1, -1, -1):
+        if dates[i] >= today - datetime.timedelta(days=streak + 1):
+            streak += 1
+        else:
+            break
+    
+    return render_template('profile.html', user=current_user, 
+                           total_sessions=total_sessions, best_score=best_score,
+                           avg_similarity=avg_sim, streak=streak)
 
 
 # ═══════════════════════════════════════════════════════
@@ -205,7 +233,10 @@ def worker_process_video(record_id, app_instance, upload_path, processed_filenam
                 record.knee_score = results['knee_score']
                 record.hip_score = results['hip_score']
                 record.snapshot_path = results['snapshot_filename']
-                record.processed_video_path = results.get('processed_video_filename')
+                # Include full annotated video with blue box
+                full_vid = results.get('full_video_filename', '')
+                clips = results.get('processed_video_filename', '')
+                record.processed_video_path = f"{clips}|{full_vid}" if full_vid else clips
                 record.feedback_text = feedback_text
                 record.worst_timestamp = results['worst_timestamp']
                 
@@ -219,6 +250,7 @@ def worker_process_video(record_id, app_instance, upload_path, processed_filenam
                 record.wrist_angle = contact_angles.get('wrist')
                 record.knee_angle = contact_angles.get('knee')
                 record.ankle_angle = contact_angles.get('ankle')
+                record.smash_speed_kmh = results.get('smash_speed_kmh', 0)
                 
                 # Store full comparison as JSON
                 comparison['automated_processing'] = {
@@ -239,6 +271,9 @@ def worker_process_video(record_id, app_instance, upload_path, processed_filenam
             print(f"[Worker Error] {e}")
             import traceback
             traceback.print_exc()
+            with open("worker_error.log", "a") as logf:
+                logf.write(f"\\n--- WORKER ERROR for record {record_id} ---\\n")
+                traceback.print_exc(file=logf)
             record = VideoRecord.query.get(record_id)
             if record:
                 record.status = 'failed'
@@ -261,6 +296,9 @@ def worker_process_match_video(record_id, app_instance, upload_path, processed_f
             print(f"[Match Worker Error] {e}")
             import traceback
             traceback.print_exc()
+            with open("worker_error.log", "a") as logf:
+                logf.write(f"\\n--- MATCH WORKER ERROR for record {record_id} ---\\n")
+                traceback.print_exc(file=logf)
             record = VideoRecord.query.get(record_id)
             if record:
                 record.status = 'failed'
@@ -317,6 +355,12 @@ def dashboard():
         else:
             break
         
+    # Skill Matrix - compute real averages from completed records
+    avg_arm = round(sum(r.arm_score for r in completed if r.arm_score) / len(completed), 1) if completed else 0
+    avg_knee = round(sum(r.knee_score for r in completed if r.knee_score) / len(completed), 1) if completed else 0
+    avg_hip = round(sum(r.hip_score for r in completed if r.hip_score) / len(completed), 1) if completed else 0
+    avg_perf = round(sum(r.performance_score for r in completed if r.performance_score) / len(completed), 1) if completed else 0
+        
     return render_template('dashboard.html', 
         records=records, 
         chart_labels=chart_labels, 
@@ -324,7 +368,11 @@ def dashboard():
         ref_player=ref_player,
         avg_similarity=avg_similarity,
         streak=streak,
-        total_sessions=len(completed)
+        total_sessions=len(completed),
+        avg_arm=avg_arm,
+        avg_knee=avg_knee,
+        avg_hip=avg_hip,
+        avg_perf=avg_perf
     )
 
 @app.route('/upload', methods=['POST'])

@@ -162,19 +162,27 @@ def auto_detect_court(frame):
     # Convert to HSV and filter for white/bright lines on green court
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # Green court mask (filter court surface)
-    green_lower = np.array([30, 40, 40])
-    green_upper = np.array([85, 255, 255])
-    green_mask = cv2.inRange(hsv, green_lower, green_upper)
+    # Multi-color court mask (Green, Blue, Red are standard badminton court colors)
+    # Green
+    green_mask = cv2.inRange(hsv, np.array([30, 40, 40]), np.array([85, 255, 255]))
+    # Blue
+    blue_mask = cv2.inRange(hsv, np.array([90, 40, 40]), np.array([130, 255, 255]))
+    # Red
+    red_mask1 = cv2.inRange(hsv, np.array([0, 40, 40]), np.array([10, 255, 255]))
+    red_mask2 = cv2.inRange(hsv, np.array([160, 40, 40]), np.array([180, 255, 255]))
 
-    # White line mask (bright areas)
+    court_color_mask = cv2.bitwise_or(green_mask, blue_mask)
+    court_color_mask = cv2.bitwise_or(court_color_mask, red_mask1)
+    court_color_mask = cv2.bitwise_or(court_color_mask, red_mask2)
+
+    # White line mask (bright areas with low saturation)
     white_lower = np.array([0, 0, 180])
-    white_upper = np.array([180, 50, 255])
+    white_upper = np.array([180, 60, 255])
     white_mask = cv2.inRange(hsv, white_lower, white_upper)
 
-    # Lines should be ON the green court
-    court_lines = cv2.bitwise_and(white_mask, green_mask,
-                                   dst=cv2.dilate(green_mask, None, iterations=5))
+    # Lines should be ON the court surface
+    court_lines = cv2.bitwise_and(white_mask, court_color_mask,
+                                   dst=cv2.dilate(court_color_mask, None, iterations=5))
 
     # Edge detection on the white lines
     edges = cv2.Canny(white_mask, 50, 150, apertureSize=3)

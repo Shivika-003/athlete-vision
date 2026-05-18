@@ -70,15 +70,47 @@
         box-shadow: 0 12px 24px rgba(0,0,0,0.3);
     }
     .feedback-card {
-        background: rgba(14, 165, 233, 0.04);
-        border: 1px solid rgba(14, 165, 233, 0.15);
-        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(30, 58, 95, 0.4));
+        border-left: 4px solid;
+        border-radius: 0 14px 14px 0;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1rem;
-        transition: border-color 0.3s;
+        transition: transform 0.3s, box-shadow 0.3s;
     }
     .feedback-card:hover {
-        border-color: rgba(14, 165, 233, 0.4);
+        transform: translateX(4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .feedback-card.card-issue { border-color: #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(30, 20, 20, 0.5)); }
+    .feedback-card.card-issue:hover { box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15); }
+    .feedback-card.card-fix { border-color: #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(40, 30, 10, 0.5)); }
+    .feedback-card.card-fix:hover { box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15); }
+    .feedback-card.card-why { border-color: #a78bfa; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(30, 20, 50, 0.5)); }
+    .feedback-card.card-why:hover { box-shadow: 0 8px 24px rgba(167, 139, 250, 0.15); }
+    .feedback-card.card-drill { border-color: #4ade80; background: linear-gradient(135deg, rgba(74, 222, 128, 0.12), rgba(15, 40, 20, 0.5)); }
+    .feedback-card.card-drill:hover { box-shadow: 0 8px 24px rgba(74, 222, 128, 0.15); }
+    .feedback-card.card-cue { border-color: #ec4899; background: linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(40, 15, 30, 0.5)); }
+    .feedback-card.card-cue:hover { box-shadow: 0 8px 24px rgba(236, 72, 153, 0.15); }
+    .feedback-card.card-checkpoint { border-color: #22d3ee; background: linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(10, 30, 40, 0.5)); }
+    .feedback-card.card-checkpoint:hover { box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15); }
+    .feedback-card.card-default { border-color: #64748b; }
+    .feedback-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    .feedback-label {
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.35rem;
     }
     .snapshot-grid {
         display: grid;
@@ -96,7 +128,7 @@
         <div>
             <h2 style="margin-bottom: 0.25rem;">
                 {% if record.shot_type == 'Match Analysis' %}
-                    🤖 Match Analysis Report
+                    🎯 Match Analysis Report
                 {% else %}
                     🏸 Biomechanical Analysis Report
                 {% endif %}
@@ -136,10 +168,9 @@
                 <!-- AI Info Box -->
                 <div style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 12px; text-align: left;">
                     <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
-                        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">🤖 AI Vision Enabled</strong><br>
-                        <span style="color: #ffa500;">🟠 Orange Box</span> — Player 1 (Near court) &nbsp;&nbsp;
-                        <span style="color: #ffff00;">🟡 Yellow Box</span> — Player 2 (Far court) &nbsp;&nbsp;<br>
-                        The stats overlay in the corners shows real-time shot classification, handle detection, and pressure analysis.
+                        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">🎯 Vision Tracking Enabled</strong><br>
+                        <span style="color: #4ade80;">🟢 Green Box</span> — Tracked Player (Near court) with zoomed Analysis Panel &nbsp;&nbsp;<br>
+                        The stats overlay shows real-time shot classification, grip detection, balance tracking, and real-world speed analysis (km/h).
                     </div>
                 </div>
             </div>
@@ -153,8 +184,8 @@
     <!-- Processing State -->
     <div class="card animate-fade-in-up" style="text-align: center; padding: 4rem 2rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem; animation: pulse 2s infinite;">⚙️</div>
-        <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">AI is Analyzing Your Video...</h3>
-        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">The AI is detecting your pose, measuring joint angles, classifying shots, and comparing to the pro benchmark. This usually takes 15-45 seconds.</p>
+        <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">Analyzing Your Video...</h3>
+        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">Detecting your pose, measuring joint angles, classifying shots, and comparing to the pro benchmark. This usually takes 15-45 seconds.</p>
         <script>setTimeout(function() { window.location.reload(); }, 6000);</script>
     </div>
     
@@ -221,11 +252,23 @@
             <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-gold);">{{ "%.0f"|format(record.hip_score or 0) }}%</div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">CORE PIVOT</p>
         </div>
+
+        <!-- Smash Speed Radar (New Feature) -->
+        {% if record.smash_speed_kmh and record.smash_speed_kmh > 0 %}
+        <div class="analysis-metric-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(30, 58, 95, 0.7)); border-color: rgba(239, 68, 68, 0.3);">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #f87171;">{{ "%.0f"|format(record.smash_speed_kmh) }} <span style="font-size: 0.9rem; font-weight: 600;">km/h</span></div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">SHUTTLE SPEED</p>
+        </div>
+        {% endif %}
     </div>
 
-    <!-- ═══════════ JOINT ANGLE BREAKDOWN ═══════════ -->
-    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">📐 Joint Angle Breakdown <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(at contact frame)</span></h3>
+    <!-- ═══════════ JOINT ANGLES & ORIGINAL VIDEO ROW ═══════════ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+        
+        <!-- JOINT ANGLE BREAKDOWN -->
+        <div class="card animate-fade-in-up" style="margin-bottom: 0;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">📐 Joint Angle Breakdown <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(at contact frame)</span></h3>
         
         <!-- Shoulder -->
         <div class="angle-bar">
@@ -271,57 +314,27 @@
             </div>
             <span class="angle-bar-value" style="color: #a78bfa;">{{ "%.0f"|format(record.ankle_angle or 0) }}°</span>
         </div>
-    </div>
-
-    <!-- ═══════════ AI SNAPSHOTS (Best vs Worst with Bounding Boxes) ═══════════ -->
-    {% if record.snapshot_path %}
-    {% set snap_parts = record.snapshot_path.split('|') %}
-    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--text-main);">📸 AI Detected Frames <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(with bounding boxes)</span></h3>
-        <div class="snapshot-grid">
-            {% if snap_parts|length >= 1 and snap_parts[0] %}
-            <div style="text-align: center;">
-                <div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 0.75rem;">
-                    <p style="color: #4ade80; font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem;">✅ Best Shot Frame{% if snap_parts|length >= 2 %} — Quality: {{ snap_parts[1] }}%{% endif %}</p>
-                    <img src="{{ url_for('serve_processed_video', filename=snap_parts[0]) }}" 
-                         alt="Best pose with bounding box" 
-                         style="width: 100%; border-radius: 10px; border: 2px solid rgba(34, 197, 94, 0.3);">
-                </div>
-                {% if record.worst_timestamp %}
-                {% set ts_parts = record.worst_timestamp.split('|') %}
-                {% if ts_parts|length >= 1 %}
-                <p style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Best at <strong style="color: var(--text-main);">{{ ts_parts[0] }}</strong></p>
-                {% endif %}
-                {% endif %}
-            </div>
-            {% endif %}
-
-            {% if snap_parts|length >= 3 and snap_parts[2] %}
-            <div style="text-align: center;">
-                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 14px; padding: 1rem; margin-bottom: 0.75rem;">
-                    <p style="color: #f87171; font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem;">⚠️ Worst Shot Frame{% if snap_parts|length >= 4 %} — Quality: {{ snap_parts[3] }}%{% endif %}</p>
-                    <img src="{{ url_for('serve_processed_video', filename=snap_parts[2]) }}" 
-                         alt="Worst pose with bounding box" 
-                         style="width: 100%; border-radius: 10px; border: 2px solid rgba(239, 68, 68, 0.3);">
-                </div>
-                {% if record.worst_timestamp %}
-                {% set ts_parts = record.worst_timestamp.split('|') %}
-                {% if ts_parts|length >= 2 %}
-                <p style="font-size: 0.85rem; color: var(--text-muted);">⏱️ Worst at <strong style="color: var(--text-main);">{{ ts_parts[1] }}</strong></p>
-                {% endif %}
-                {% endif %}
-            </div>
-            {% endif %}
         </div>
+        
+        <!-- ORIGINAL VIDEO -->
+        <div class="card animate-fade-in-up" style="margin-bottom: 0;">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-pink); font-size: 1.3rem;">📹 Original Uploaded Video</h3>
+            <video controls loop muted playsinline style="width: 100%; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block;">
+                <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
+                <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
+            </video>
+        </div>
+        
     </div>
-    {% endif %}
+
+
 
     <!-- ═══════════ PROCESSED VIDEO REELS (Best & Worst) ═══════════ -->
     {% if record.processed_video_path %}
     {% set vid_parts = record.processed_video_path.split('|') %}
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--text-main);">🎬 AI Highlight Reels <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(annotated with bounding boxes)</span></h3>
-        <div class="snapshot-grid">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-main); text-align: center;">🎬 Highlight Reels <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(Cinematic View)</span></h3>
+        <div style="display: flex; flex-direction: column; gap: 2.5rem; max-width: 900px; margin: 0 auto;">
             {% if vid_parts|length >= 1 and vid_parts[0] %}
             <div>
                 <p style="color: #4ade80; font-weight: 700; margin-bottom: 0.75rem; text-align: center;">✅ Best Shots Reel</p>
@@ -339,19 +352,40 @@
             </div>
             {% endif %}
         </div>
+        
+        {% if vid_parts|length >= 3 and vid_parts[2] %}
+        <div style="margin-top: 2rem; text-align: center;">
+            <button type="button" onclick="var v=document.getElementById('fullAnnotatedVid'); v.style.display = v.style.display === 'none' ? 'block' : 'none'; this.textContent = v.style.display === 'none' ? '▶ Show Full Annotated Video' : '▲ Hide Full Video';" 
+                    style="background: rgba(77, 166, 255, 0.1); border: 1px solid rgba(77, 166, 255, 0.3); color: #4da6ff; padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.3s;"
+                    onmouseover="this.style.background='rgba(77, 166, 255, 0.2)'" onmouseout="this.style.background='rgba(77, 166, 255, 0.1)'">
+                ▶ Show Full Annotated Video
+            </button>
+            <div id="fullAnnotatedVid" style="display: none; margin-top: 1.5rem;">
+                <video controls playsinline loop style="width: 100%; max-width: 800px; border-radius: 12px; background: #000; border: 2px solid rgba(77, 166, 255, 0.3); display: block; margin: 0 auto; box-shadow: 0 4px 20px rgba(77, 166, 255, 0.1);">
+                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[2]) }}" type="video/mp4">
+                </video>
+            </div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 
-    <!-- ═══════════ AI COACHING FEEDBACK ═══════════ -->
+    <!-- ═══════════ COACHING FEEDBACK ═══════════ -->
     {% if record.feedback_text %}
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">🤖 AI Coaching Feedback</h3>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #0ea5e9, #06b6d4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🏋️</div>
+            <div>
+                <h3 style="margin: 0; color: var(--accent-cyan); font-size: 1.25rem;">Coaching Feedback</h3>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Personalized technique analysis & drills</p>
+            </div>
+        </div>
         {% set feedback_parts = record.feedback_text.split('|') %}
         {% for part in feedback_parts %}
             {% set part_trimmed = part.strip() %}
             {% if part_trimmed %}
-            <div class="feedback-card">
-                <p style="font-size: 1.05rem; color: var(--text-main); line-height: 1.6; margin: 0;">{{ part_trimmed }}</p>
+            <div class="feedback-card {% if '❌' in part_trimmed or 'Issue' in part_trimmed %}card-issue{% elif '🎯' in part_trimmed or 'Fix' in part_trimmed %}card-fix{% elif '💡' in part_trimmed or 'Why' in part_trimmed %}card-why{% elif '🏋' in part_trimmed or 'Drill' in part_trimmed %}card-drill{% elif '🎾' in part_trimmed or 'Cue' in part_trimmed %}card-cue{% elif '✅' in part_trimmed or 'Checkpoint' in part_trimmed or '💎' in part_trimmed or 'Pro' in part_trimmed %}card-checkpoint{% else %}card-default{% endif %}">
+                <p style="font-size: 1.02rem; color: var(--text-main); line-height: 1.7; margin: 0;">{{ part_trimmed }}</p>
             </div>
             {% endif %}
         {% endfor %}
@@ -361,14 +395,6 @@
     {% endif %}
     {% endif %}
 
-    <!-- ═══════════ ORIGINAL VIDEO ═══════════ -->
-    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1rem; color: var(--accent-pink); font-size: 1.3rem;">📹 Original Uploaded Video</h3>
-        <video controls loop muted playsinline style="width: 100%; max-width: 800px; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block; margin: 0 auto;">
-            <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
-            <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
-        </video>
-    </div>
 
     <!-- Back Button -->
     <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Athlete Vision</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -53,5 +54,19 @@
         
         {% block content %}{% endblock %}
     </main>
+
+    <footer style="background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(0, 212, 255, 0.1); padding: 2.5rem 5%; margin-top: auto;">
+        <div style="max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <a href="/" style="font-weight: 800; font-size: 1.1rem; letter-spacing: 2px; text-transform: uppercase; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none;">ATHLETE VISION</a>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.4rem;">&copy; 2026 Athlete Vision. AI-Powered Biomechanics.</p>
+            </div>
+            <div style="display: flex; gap: 2rem; align-items: center;">
+                <a href="#" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.3s;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='var(--text-muted)'">Privacy</a>
+                <a href="#" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.3s;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='var(--text-muted)'">Terms</a>
+                <a href="#" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color 0.3s;" onmouseover="this.style.color='var(--accent-cyan)'" onmouseout="this.style.color='var(--text-muted)'">Contact</a>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
