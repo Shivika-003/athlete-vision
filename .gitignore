@@ -12,6 +12,7 @@ processed/*
 
 # Ignore machine learning model weights (large binary files)
 *.pt
+!shuttlecock_best.pt
 
 # Temporary / scratch files
 temp.py
