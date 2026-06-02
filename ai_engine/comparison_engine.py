@@ -27,7 +27,7 @@ def compare_user_with_reference(user_results):
     Returns:
         dict with comparison data:
         {
-            'reference_player': 'An Se-young',
+            'reference_player': 'Ideal Standard',
             'shot_type': 'smash',
             'similarity_score': 85.2,
             'grade': 'B+',

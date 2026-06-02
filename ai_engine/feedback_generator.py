@@ -15,7 +15,7 @@ def _no_reference_feedback(comparison_data):
     """Fallback when no reference data is available."""
     return {
         'issue': 'No reference player configured. Cannot analyze specific form deviations.',
-        'fix': 'Ask your administrator to set a Professional Benchmark (like An Se-young).',
+        'fix': 'Ask your administrator to configure a biomechanical benchmark.',
         'why': 'AI Coach Insights require a professional benchmark to compare your angles against.',
         'drill': 'Keep practicing your general mechanics and shadow swings.',
         'cue': 'Focus on consistent form.',
@@ -30,7 +30,7 @@ def generate_feedback(comparison_data):
     if not comparison_data.get('has_reference'):
         return _no_reference_feedback(comparison_data)
         
-    ref_name = comparison_data.get('reference_player', 'An Se-young')
+    ref_name = comparison_data.get('reference_player', 'Ideal Standard')
     shot_label = comparison_data.get('shot_type', 'shot').lower()
     similarity = comparison_data.get('similarity_score', 0)
     grade = comparison_data.get('grade', 'N/A')
@@ -83,11 +83,7 @@ def generate_feedback(comparison_data):
         combined_drill.append(" Shadow swings on one leg to find your center.")
 
     # Add "Pro Secret" (Integrated into Checkpoint to keep 6-part layout)
-    pro_secret_text = ""
-    if ref_name == "An Se-young":
-        pro_secret_text = f" 💎 Pro Secret from {ref_name}: Focus on 'Split-step' recovery. She stays low to cover the next shot 30% faster."
-    else:
-        pro_secret_text = f" 💎 Pro Mindset: Great players focus 80% on 'Ready Position' before the shuttle arrives."
+    pro_secret_text = " 💎 Pro Mindset: Focus on 'Split-step' recovery and staying low to cover the next shot 30% faster."
 
     return {
         'issue': "".join(combined_issue), # Join with empty string as items already have space if needed
@@ -107,7 +103,7 @@ def _get_positive_feedback(shot_label, ref_name, similarity):
     """Return varied positive feedback for good form."""
     options = [
         {
-            'issue': f"Your {shot_label} form is excellent and closely matches {ref_name}.",
+            'issue': f"Your {shot_label} form is excellent and closely matches the ideal standard.",
             'fix': "Maintain this precise joint alignment and keep building consistency.",
             'why': "Optimal biomechanics lead to maximum efficiency and power.",
             'drill': f"Do 20 full-speed {shot_label}s to lock in this muscle memory.",
@@ -115,7 +111,7 @@ def _get_positive_feedback(shot_label, ref_name, similarity):
             'checkpoint': "Your shots should feel effortless and powerful."
         },
         {
-            'issue': f"Outstanding {shot_label} technique! Your angles closely mirror {ref_name}'s professional form.",
+            'issue': f"Outstanding {shot_label} technique! Your angles closely mirror the ideal biomechanical standard.",
             'fix': "Focus on repeating this exact form under match pressure.",
             'why': "Consistency under pressure separates advanced from intermediate players.",
             'drill': f"Play 3 sets of 10 {shot_label}s against a training partner at full intensity.",
@@ -143,7 +139,7 @@ def _get_joint_advice(joint, direction, shot_label, ref_name):
         # Generic fallback
         return {
             'issue': f"Your {joint} is misaligned during the {shot_label}.",
-            'fix': f"Adjust your {joint} to match {ref_name}'s form.",
+            'fix': f"Adjust your {joint} to match the ideal biomechanical standard.",
             'why': f"Proper {joint} alignment improves shot quality.",
             'drill': f"Practice 10 {shot_label} shadow swings slowly.",
             'cue': f"Watch the {joint}.",
@@ -170,7 +166,7 @@ _ADVICE_DATABASE = {
         'higher': [
             {
                 'issue': "Shoulder is too low when hitting.",
-                'fix': "Reach higher! Let your shoulder go up to meet the shuttle like {ref}.",
+                'fix': "Reach higher! Let your shoulder go up to meet the shuttle at the highest extension point.",
                 'why': "Higher contact gives you steeper, harder shots to return.",
                 'drill': "Do 10 slow shadow swings. Stop at the top to check your stretch.",
                 'cue': "Reach for the ceiling.",
