@@ -14,11 +14,11 @@
     <div class="compare-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
         
         <!-- Setup A Column -->
-        <div class="card video-wrapper" style="text-align: center; background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(59, 130, 246, 0.05));">
+        <div class="card video-wrapper" style="text-align: center; background: rgba(22, 163, 74, 0.02); border: 1px solid var(--border);">
             <h3 style="margin-bottom: 1rem; color: var(--accent-cyan);">Session A ({{ r1.upload_date.strftime('%b %d') }})</h3>
             
             <div style="border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
-                <video controls style="width: 100%; display: block; border-bottom: 2px solid var(--border);">
+                <video controls style="max-height: 480px; width: 100%; max-width: 600px; display: block; margin: 0 auto; border-bottom: 2px solid var(--border); object-fit: contain;">
                     <source src="{{ url_for('serve_uploaded_video', filename=r1.filename) }}" type="video/mp4">
                 </video>
             </div>
@@ -36,11 +36,11 @@
         </div>
 
         <!-- Setup B Column -->
-        <div class="card video-wrapper" style="text-align: center; background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(244, 63, 94, 0.05));">
+        <div class="card video-wrapper" style="text-align: center; background: rgba(22, 163, 74, 0.02); border: 1px solid var(--border);">
             <h3 style="margin-bottom: 1rem; color: var(--accent-pink);">Session B ({{ r2.upload_date.strftime('%b %d') }})</h3>
             
             <div style="border-radius: 8px; overflow: hidden; margin-bottom: 1rem;">
-                <video controls style="width: 100%; display: block; border-bottom: 2px solid var(--border);">
+                <video controls style="max-height: 480px; width: 100%; max-width: 600px; display: block; margin: 0 auto; border-bottom: 2px solid var(--border); object-fit: contain;">
                     <source src="{{ url_for('serve_uploaded_video', filename=r2.filename) }}" type="video/mp4">
                 </video>
             </div>
@@ -77,13 +77,13 @@
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r1.arm_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r2.arm_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
                     </div>
                 </div>
@@ -97,13 +97,13 @@
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r1.hip_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r2.hip_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
                     </div>
                 </div>
@@ -117,19 +117,19 @@
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.25rem;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">Session A</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r1.knee_score or 0 }}%; background: var(--accent-cyan); height: 100%;"></div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <span style="width: 80px; font-size: 0.85rem; color: var(--accent-pink); font-weight: 600;">Session B</span>
-                        <div style="flex-grow: 1; background: rgba(255,255,255,0.1); border-radius: 999px; height: 16px; overflow: hidden;">
+                        <div style="flex-grow: 1; background: rgba(0, 0, 0, 0.06); border-radius: 999px; height: 16px; overflow: hidden;">
                         <div style="width: {{ r2.knee_score or 0 }}%; background: var(--accent-pink); height: 100%;"></div>
                     </div>
                 </div>
             </div>
 
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+            <div style="background: rgba(22, 163, 74, 0.02); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
                 <h4 style="margin: 0 0 0.5rem 0; color: var(--text-main);">🤖 Overall Result</h4>
                 
                 {% set total_dif_avg = (arm_dif + hip_dif + knee_dif) / 3 %}
@@ -155,7 +155,7 @@
                         {% if arm_dif < 0 %}
                             <strong style="color: #ef4444;">Your Arm Extension got worse (-{{ "%.1f"|format(arm_dif|abs) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/TXFEXGFj5Ac?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/band_extension_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
@@ -174,7 +174,7 @@
                         {% else %}
                             <strong style="color: #22c55e;">Your Arm Extension is getting better, but still needs work (+{{ "%.1f"|format(arm_dif) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/faG2NWIVM18?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/shadow_swing_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">
@@ -195,7 +195,7 @@
                         {% if hip_dif < 0 %}
                             <strong style="color: #ef4444;">Your Body Rotation got worse (-{{ "%.1f"|format(hip_dif|abs) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/twist_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
@@ -214,7 +214,7 @@
                         {% else %}
                             <strong style="color: #22c55e;">Your Body Rotation is improving, but still needs work (+{{ "%.1f"|format(hip_dif) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/wall_throw_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">
@@ -235,7 +235,7 @@
                         {% if knee_dif < 0 %}
                             <strong style="color: #ef4444;">Your Knee Bend got worse (-{{ "%.1f"|format(knee_dif|abs) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-pink);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-pink); box-shadow: 0 4px 15px rgba(236,72,153,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/lunge_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(236,72,153,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(236,72,153,0.6);">
@@ -254,7 +254,7 @@
                         {% else %}
                             <strong style="color: #22c55e;">Your Knee Bend is improving, but still needs work (+{{ "%.1f"|format(knee_dif) }}%).</strong>
                             
-                            <div style="display: flex; gap: 1.5rem; background: var(--bg-card, #1e293b); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 1.5rem; background: var(--card-bg-solid, #ffffff); padding: 1rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 8px 25px rgba(0,0,0,0.2); align-items: center; margin-top: 1rem; flex-wrap: wrap;">
                                 <div style="position: relative; width: 300px; height: 190px; border-radius: 8px; overflow: hidden; flex-shrink: 0; cursor: pointer; border: 2px solid var(--accent-neon-blue);" onclick="this.outerHTML='<iframe width=\'300\' height=\'190\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 8px; border: 2px solid var(--accent-neon-blue); box-shadow: 0 4px 15px rgba(56,189,248,0.3); flex-shrink: 0;\'></iframe>'">
                                     <img src="{{ url_for('static', filename='img/lunge_drill.png') }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: transform 0.3s ease;">
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; background: rgba(56,189,248,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(56,189,248,0.6);">

@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in" style="max-width: 1100px; margin: 0 auto;">
+
+    <!-- ═══════════ PAGE HEADER ═══════════ -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <p style="color: var(--accent-cyan); font-weight: 700; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.25rem;">SESSION ARCHIVE</p>
+            <h1 style="font-size: 2rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">History</h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Browse, filter, and compare your past analysis sessions.</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn" style="font-size: 0.9rem;">← Back to Dashboard</a>
+    </div>
+
+    <!-- ═══════════ TOOLBAR ═══════════ -->
+    <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; border-radius: 14px;">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label for="calendarFilter" style="font-weight: 600; font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">Filter by Date</label>
+                <input type="date" id="calendarFilter" onchange="filterLogByDate()" title="Filter by Training Day" style="padding: 0.5rem 0.75rem; font-weight: 600;">
+            </div>
+            <button onclick="clearDateFilter()" style="background: none; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--accent-cyan)'; this.style.color='var(--accent-cyan)'" onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text-muted)'">Clear Filter</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <span id="sessionCount" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">{{ records|length }} sessions</span>
+            <button id="compareBtn" class="btn btn-pink" disabled onclick="submitCompare()" style="font-size: 0.85rem; padding: 0.5rem 1.25rem;">Compare Selected</button>
+        </div>
+    </div>
+
+    <!-- ═══════════ DAILY AVERAGES BOX ═══════════ -->
+    <div id="dailyAveragesBox" style="display:none; background: linear-gradient(135deg, rgba(22, 163, 74, 0.05), rgba(5, 150, 105, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border: 1px solid rgba(22, 163, 74, 0.15); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);">
+        <h4 style="color: var(--accent-cyan); margin:0 0 0.75rem 0; font-size: 1.1rem; letter-spacing: 0.5px;">🗓️ Daily Performance Review</h4>
+        <p id="dailyAverageText" style="margin: 0; font-weight:400; font-size: 1.05rem; line-height: 1.6; color: var(--text-main);"></p>
+    </div>
+
+    <!-- ═══════════ SESSION LIST ═══════════ -->
+    {% if records %}
+    <div id="session-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for record in records %}
+        <div class="record-item card" data-date="{{ record.upload_date.strftime('%Y-%m-%d') }}" data-score="{{ record.performance_score or 0 }}" data-similarity="{{ record.similarity_score or 0 }}" style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.75rem; border-radius: 14px; margin-bottom: 0; transition: all 0.25s ease; cursor: default;">
+            
+            <!-- Left: Checkbox + File Info -->
+            <div style="display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 0;">
+                <input type="checkbox" class="compare-check" value="{{ record.id }}" onclick="updateCompareButton()" {% if record.status != 'completed' %}disabled{% endif %}>
+                
+                <!-- Status Indicator Dot -->
+                <div style="width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+                    {% if record.status == 'processing' %}
+                        background: var(--accent-cyan); animation: pulse 1.5s infinite;
+                    {% elif record.status == 'failed' %}
+                        background: #ef4444;
+                    {% else %}
+                        background: #4ade80;
+                    {% endif %}
+                "></div>
+                
+                <div style="min-width: 0; flex: 1;">
+                    <p style="font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ record.filename }}</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <small style="color: var(--text-muted); font-weight: 500;">📅 {{ record.upload_date.strftime('%b %d, %Y') }}</small>
+                        <small style="color: var(--text-muted); font-weight: 500;">🕐 {{ record.upload_date.strftime('%I:%M %p') }}</small>
+                        {% if record.shot_type and record.status == 'completed' %}
+                        <span style="background: rgba(22, 163, 74, 0.06); color: var(--accent-cyan); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 6px; letter-spacing: 0.5px; text-transform: uppercase;">{{ record.shot_type }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Score + Actions -->
+            <div style="display: flex; align-items: center; gap: 2rem; flex-shrink: 0;">
+                {% if record.status == 'processing' %}
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; min-width: 120px;">
+                        <div class="skeleton-box" style="width: 80px; height: 16px;"></div>
+                        <span class="animate-pulse" style="font-size: 0.8rem; font-weight: 600; color: var(--accent-cyan);">⚙️ Processing...</span>
+                    </div>
+                {% elif record.status == 'failed' %}
+                    <span style="font-size: 0.9rem; font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.06); padding: 0.35rem 0.75rem; border-radius: 8px;">✗ Failed</span>
+                {% else %}
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; min-width: 120px;">
+                        {% if record.shot_type in ('Match Analysis', 'Shadow Practice') %}
+                        <span style="font-size: 1rem; font-weight: 800; color: var(--accent-pink);">🤖 Shadow Practice</span>
+                        {% else %}
+                            {% if record.similarity_score %}
+                            <span style="font-size: 1.15rem; font-weight: 800; color: {% if record.similarity_score > 80 %}#16a34a{% elif record.similarity_score > 60 %}#d97706{% else %}#ef4444{% endif %};">
+                                {{ "%.0f"|format(record.similarity_score) }}%
+                            </span>
+                            <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Accuracy</span>
+                            {% endif %}
+                            {% if record.performance_score is not none %}
+                            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 0.1rem;">
+                                Score: {{ "%.1f"|format(record.performance_score) }}
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                {% if record.status == 'completed' %}
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <a href="{{ url_for('analysis', record_id=record.id) }}" style="color: #fff; background: var(--accent-cyan); text-decoration: none; font-size: 0.8rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 8px; transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">View</a>
+                    <form action="{{ url_for('delete_video', record_id=record.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this video permanently?');">
+                        <button type="submit" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0.4rem 0.75rem; border-radius: 8px; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.12)'" onmouseout="this.style.background='rgba(239,68,68,0.06)'">Delete</button>
+                    </form>
+                </div>
+                {% elif record.status == 'failed' %}
+                <form action="{{ url_for('delete_video', record_id=record.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this video permanently?');">
+                    <button type="submit" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0.4rem 0.75rem; border-radius: 8px;">Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Empty state after filtering -->
+    <div id="no-results" style="display: none; text-align: center; padding: 3rem;">
+        <p style="font-size: 1.2rem; color: var(--text-muted); font-weight: 600;">No sessions found for this date.</p>
+        <button onclick="clearDateFilter()" class="btn" style="margin-top: 1rem; font-size: 0.85rem;">Show All Sessions</button>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="card" style="text-align: center; padding: 4rem 2rem;">
+        <div style="font-size: 3.5rem; margin-bottom: 1rem;">🏸</div>
+        <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">No Sessions Yet</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">Upload your first badminton video from the dashboard to start tracking your progress.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn">Go to Dashboard</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // ═══════ COMPARE CHECKBOXES ═══════
+    function updateCompareButton() {
+        const checkboxes = document.querySelectorAll('.compare-check');
+        let checkedCount = 0;
+        checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
+        
+        checkboxes.forEach(cb => {
+            if (!cb.checked) cb.disabled = (checkedCount >= 2);
+        });
+        
+        const btn = document.getElementById('compareBtn');
+        btn.disabled = (checkedCount !== 2);
+    }
+    
+    function submitCompare() {
+        const selected = [];
+        document.querySelectorAll('.compare-check:checked').forEach(cb => selected.push(cb.value));
+        if (selected.length === 2) {
+            window.location.href = "{{ url_for('compare') }}?v1=" + selected[0] + "&v2=" + selected[1];
+        }
+    }
+
+    // ═══════ DATE FILTER ═══════
+    function filterLogByDate() {
+        const selectedDate = document.getElementById('calendarFilter').value;
+        const records = document.querySelectorAll('.record-item');
+        let totalScore = 0;
+        let totalSim = 0;
+        let count = 0;
+        let visibleCount = 0;
+        
+        records.forEach(record => {
+            const recordDate = record.getAttribute('data-date');
+            
+            if (!selectedDate || recordDate === selectedDate) {
+                record.style.display = 'flex';
+                visibleCount++;
+                if (selectedDate && parseFloat(record.getAttribute('data-score')) > 0) {
+                    totalScore += parseFloat(record.getAttribute('data-score'));
+                    totalSim += parseFloat(record.getAttribute('data-similarity') || 0);
+                    count++;
+                }
+            } else {
+                record.style.display = 'none';
+            }
+        });
+
+        // Update session count
+        document.getElementById('sessionCount').textContent = visibleCount + ' session' + (visibleCount !== 1 ? 's' : '');
+
+        // Show/hide no results message
+        const noResults = document.getElementById('no-results');
+        if (noResults) {
+            noResults.style.display = (selectedDate && visibleCount === 0) ? 'block' : 'none';
+        }
+        
+        const reviewBox = document.getElementById('dailyAveragesBox');
+        if (selectedDate && count > 0) {
+            reviewBox.style.display = 'block';
+            const dailyAvg = (totalScore / count).toFixed(1);
+            const dailySim = (totalSim / count).toFixed(1);
+            
+            document.getElementById('dailyAverageText').innerHTML = 
+                `You completed <strong>${count}</strong> session${count > 1 ? 's' : ''} with an Average Technique Accuracy of <strong id="simCounter" style="color: var(--accent-cyan); font-size: 1.25rem;">0.0%</strong> and Performance Score of <strong id="perfCounter" style="color: var(--accent-neon-green); font-size: 1.25rem;">0.0%</strong>!`;
+            
+            setTimeout(() => {
+                animateValue("simCounter", 0, parseFloat(dailySim), 1500);
+                animateValue("perfCounter", 0, parseFloat(dailyAvg), 1500);
+            }, 50);
+            
+        } else if (selectedDate && count === 0) {
+            reviewBox.style.display = 'block';
+            document.getElementById('dailyAverageText').innerHTML = `No completed sessions found for this date.`;
+        } else {
+            reviewBox.style.display = 'none';
+        }
+    }
+
+    function clearDateFilter() {
+        document.getElementById('calendarFilter').value = '';
+        filterLogByDate();
+    }
+
+    // ═══════ MICRO-ANIMATIONS ═══════
+    function animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            const currentVal = (progress * (end - start) + start).toFixed(1);
+            obj.innerHTML = currentVal + "%";
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // ═══════ AUTO-DETECT TODAY ═══════
+    window.addEventListener('DOMContentLoaded', function() {
+        const d = new Date();
+        const today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+        const records = document.querySelectorAll('.record-item');
+        let trainedToday = false;
+        
+        records.forEach(r => {
+            if(r.getAttribute('data-date') === today) trainedToday = true;
+        });
+        
+        if (trainedToday) {
+            document.getElementById('calendarFilter').value = today;
+            filterLogByDate();
+        }
+    });
+</script>
+{% endblock %}

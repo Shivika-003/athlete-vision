@@ -10,5 +10,19 @@ processed/*
 !uploads/.gitkeep
 !processed/.gitkeep
 
-# Ignore machine learning model weights
+# Ignore machine learning model weights (large binary files)
 *.pt
+
+# Temporary / scratch files
+temp.py
+temp_utf8.py
+scratch/
+worker_error.log
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

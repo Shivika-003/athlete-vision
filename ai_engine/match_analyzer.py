@@ -1,23 +1,47 @@
 """
-Athlete Vision 6.3 — Accurate Analysis Tracker
-================================================
-  1. 0.5x Time Expansion  — Output at half input FPS for slow-motion
-  2. Analysis Hysteresis   — 8-frame hold + 3-frame confirm (tuned)
-  3. UI Smoothing          — Alpha-0.6 panel, monospaced font, WMA-anchored
-  4. Zero-Skip Guardrail   — Linear interpolation + constant Neon Green 2px
-  5. Accurate Analysis     — Only classify on fresh YOLO keypoints
-  + All prior systems (CSRT, Kalman, NO_SKIP, Lookahead) retained.
+Athlete Vision — Shadow Practice Action Analyzer & Repetition Scoreboard
+=========================================================================
+Tracks a single badminton player in unconstrained, zero-infrastructure environments.
+Classifies and counts repetitions for 6 core shots: Smash, Clear, Drive, Drop, Lift, Net.
+Generates an output video at standard 1.0x speed (no slow motion) with cinematic overlays.
 """
 
-import cv2, numpy as np, collections, os, time, math
+import cv2
+import numpy as np
+import collections
+import os
+import time
+import math
 from ultralytics import YOLO
 from ai_engine.shot_classifier import ShotClassifier
-from ai_engine.player_reid import PlayerReID
-from ai_engine.pose_gate import PoseGate
 
+# Global model cache to prevent repeated loads
 print("[MatchAnalyzer] Loading YOLO models globally into memory...")
-GLOBAL_POSE_MODEL = YOLO('yolov8n-pose.pt')
+GLOBAL_POSE_MODEL = YOLO('yolov8n-pose.pt')   # nano model, significantly faster on CPU
 print("[MatchAnalyzer] Models loaded successfully.")
+
+_shuttle_model_cache = None
+_shuttle_loaded = False
+
+def _get_shuttle_model():
+    global _shuttle_model_cache, _shuttle_loaded
+    if _shuttle_loaded:
+        return _shuttle_model_cache
+    _shuttle_loaded = True
+    try:
+        if os.path.exists('shuttlecock_best.pt'):
+            _shuttle_model_cache = YOLO('shuttlecock_best.pt')
+            print("[MatchAnalyzer] ✅ Custom shuttlecock model loaded (shuttlecock_best.pt).")
+        elif os.path.exists('badminton_yolo.pt'):
+            _shuttle_model_cache = YOLO('badminton_yolo.pt')
+            print("[MatchAnalyzer] Custom shuttlecock model loaded (badminton_yolo.pt — legacy).")
+        else:
+            print("[MatchAnalyzer] No custom shuttlecock model found, running pose-only.")
+            _shuttle_model_cache = None
+    except Exception as e:
+        print(f"[MatchAnalyzer] Shuttle model loading failed: {e}")
+        _shuttle_model_cache = None
+    return _shuttle_model_cache
 
 # UI Constants
 NEON_GREEN = (50, 255, 50)
@@ -27,7 +51,7 @@ RED = (60, 60, 255)
 YELLOW = (0, 220, 255)
 
 class SpeedTracker:
-    def __init__(self, fps, skip, window=15):
+    def __init__(self, fps, skip, window=10):
         self.history = collections.deque(maxlen=window)
         self.last_pos = None
         self.fps = fps
@@ -38,6 +62,7 @@ class SpeedTracker:
         if box_height <= 0:
             pixels_per_meter = 100
         else:
+            # Scale assumption: Average player height is ~1.75 meters
             pixels_per_meter = box_height / 1.75
             
         if self.last_pos is not None:
@@ -49,7 +74,7 @@ class SpeedTracker:
         self.last_pos = (cx, cy)
 
     def get_speed(self):
-        if len(self.history) < 3: return '0.0 km/h', 0.0
+        if len(self.history) < 2: return '0.0 km/h', 0.0
         avg = sum(self.history) / len(self.history)
         return f"{avg:.1f} km/h", avg
 
@@ -61,8 +86,8 @@ class BoxKalmanFilter:
             [0,0,0,0,1,0,0,0], [0,0,0,0,0,1,0,0], [0,0,0,0,0,0,1,0], [0,0,0,0,0,0,0,1]], np.float32)
         self.kalman.measurementMatrix = np.array([
             [1,0,0,0,0,0,0,0], [0,1,0,0,0,0,0,0], [0,0,1,0,0,0,0,0], [0,0,0,1,0,0,0,0]], np.float32)
-        self.kalman.processNoiseCov = np.eye(8, dtype=np.float32) * 0.03
-        self.kalman.measurementNoiseCov = np.eye(4, dtype=np.float32) * 1.0
+        self.kalman.processNoiseCov = np.eye(8, dtype=np.float32) * 0.02
+        self.kalman.measurementNoiseCov = np.eye(4, dtype=np.float32) * 0.5
         self.kalman.errorCovPost = np.eye(8, dtype=np.float32)
         self.initialized = False
 
@@ -81,9 +106,9 @@ class BoxKalmanFilter:
         x, y, w, h = box[0], box[1], box[2]-box[0], box[3]-box[1]
         meas = np.array([[np.float32(x)], [np.float32(y)], [np.float32(w)], [np.float32(h)]])
         self.kalman.correct(meas)
-        
+
 class LookaheadBuffer:
-    def __init__(self, window=4):
+    def __init__(self, window=3):
         self.history = collections.deque(maxlen=window)
         
     def push(self, box):
@@ -94,112 +119,139 @@ class LookaheadBuffer:
         avg_box = np.mean(self.history, axis=0)
         return (float(avg_box[0]), float(avg_box[1]), float(avg_box[2]), float(avg_box[3]))
 
-def compute_depth_score(box, H, W):
-    # Score based on distance from bottom of screen (closer = lower depth score)
-    y_center = (box[1] + box[3]) / 2.0
-    return H - y_center
-
-def _barea(box): return (box[2]-box[0]) * (box[3]-box[1])
-
 def lerp_box(box_a, box_b, t):
     if box_a is None or box_b is None: return box_b
     return tuple(int(box_a[j]*(1-t) + box_b[j]*t) for j in range(4))
-
-def unsharp_mask(img, sigma=1.0, strength=0.5):
-    blurred = cv2.GaussianBlur(img, (0, 0), sigma)
-    return cv2.addWeighted(img, 1.0 + strength, blurred, -strength, 0)
 
 def compute_stance(keypoints):
     """Analyze player stance from keypoints: Stable / Leaning / Lunging."""
     if keypoints is None or len(keypoints) < 17:
         return 'N/A'
-    kp = np.array(keypoints); C = 0.3
-    nose = kp[0]; lhip, rhip = kp[11], kp[12]
+    kp = np.array(keypoints)
+    CONF = 0.2
+    nose = kp[0]
+    lhip, rhip = kp[11], kp[12]
     lsho, rsho = kp[5], kp[6]
-    if nose[2] < C or lhip[2] < C or rhip[2] < C or lsho[2] < C or rsho[2] < C:
+    
+    if nose[2] < CONF or lhip[2] < CONF or rhip[2] < CONF or lsho[2] < CONF or rsho[2] < CONF:
         return 'N/A'
+    
     mid_hip_x = (lhip[0] + rhip[0]) / 2.0
-    shoulder_w = abs(lsho[0] - rsho[0]) + 1
-    offset = abs(nose[0] - mid_hip_x) / shoulder_w
+    mid_hip_y = (lhip[1] + rhip[1]) / 2.0
+    mid_sho_x = (lsho[0] + rsho[0]) / 2.0
+    mid_sho_y = (lsho[1] + rsho[1]) / 2.0
+    torso_h = abs(mid_hip_y - mid_sho_y) + 1e-6
+    
+    # Horizontal offset: nose vs hips (lateral lean / reaching)
+    offset = abs(nose[0] - mid_hip_x) / torso_h
+    
+    # Forward lean: when torso tilts forward, the shoulder midpoint shifts
+    # significantly from the hip midpoint horizontally
+    shoulder_hip_offset = abs(mid_sho_x - mid_hip_x) / torso_h
+    
+    # Torso compression: when lunging, torso height shrinks as player bends
+    # Compare nose-to-hip vertical distance vs shoulder-to-hip (torso_h)
+    nose_hip_vertical = abs(nose[1] - mid_hip_y)
+    torso_compression = nose_hip_vertical / torso_h  # < 1.3 means compressed/bent forward
     
     lknee, rknee = kp[13], kp[14]
     knee_spread = 0
-    if lknee[2] > C and rknee[2] > C:
-        knee_spread = abs(lknee[0] - rknee[0]) / shoulder_w
-        
-    if knee_spread > 1.8 or offset > 0.7:
+    if lknee[2] > CONF and rknee[2] > CONF:
+        knee_spread = abs(lknee[0] - rknee[0]) / torso_h
+    
+    # Ankle spread: wide stance detection (forward/back or lateral)
+    lankle, rankle = kp[15], kp[16]
+    ankle_spread = 0
+    if lankle[2] > CONF and rankle[2] > CONF:
+        ankle_spread = abs(lankle[0] - rankle[0]) / torso_h
+    
+    # Deep knee bend: check if either knee is significantly bent
+    knee_below_hip = 0
+    if lknee[2] > CONF:
+        knee_below_hip = max(knee_below_hip, (lknee[1] - mid_hip_y) / torso_h)
+    if rknee[2] > CONF:
+        knee_below_hip = max(knee_below_hip, (rknee[1] - mid_hip_y) / torso_h)
+    
+    # LUNGING: any of these strong indicators
+    if (knee_spread > 0.85          # Wide knee spread (lowered from 1.0)
+        or offset > 0.45            # Nose far from hip center horizontally (lowered from 0.55)
+        or ankle_spread > 1.1       # Wide ankle stance (lowered from 1.3)
+        or (shoulder_hip_offset > 0.3 and torso_compression < 1.3)  # Forward lean + compressed torso
+        or (knee_spread > 0.65 and offset > 0.30)  # Combined moderate knee spread + lean
+        or (ankle_spread > 0.9 and offset > 0.30)  # Combined moderate ankle spread + lean
+    ):
         return 'Lunging'
-    elif offset > 0.35:
+    elif offset > 0.30 or shoulder_hip_offset > 0.25 or knee_spread > 0.7:
         return 'Leaning'
     return 'Stable'
 
-def draw_data_panel(frame, box, shot, grip, smashes, speed_label, stance, position, W, H):
-    PW, PH = 120, 130
-    px1 = 20
-    py1 = 20
+def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
+    """Draws a beautiful translucent sidebar scoreboard on the left of the screen."""
+    PW, PH = 140, 215
+    px1, py1 = 20, 20
     px2, py2 = px1 + PW, py1 + PH
 
-    # Sleek translucent dark panel
+    # Sleek translucent dark panel backing
     overlay = frame.copy()
-    cv2.rectangle(overlay, (px1, py1), (px2, py2), (10, 15, 20), -1)
+    cv2.rectangle(overlay, (px1, py1), (px2, py2), (10, 15, 22), -1)
     cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
     
     # Accent top border
     cv2.rectangle(frame, (px1, py1), (px2, py1 + 4), NEON_GREEN, -1)
-    cv2.rectangle(frame, (px1, py1), (px2, py2), (100, 100, 100), 1)
+    cv2.rectangle(frame, (px1, py1), (px2, py2), (80, 80, 80), 1)
 
-    # Crisp, elegant font
     fn = cv2.FONT_HERSHEY_SIMPLEX
-    fs, lh = 0.35, 18
-    lx, vx, y = px1 + 8, px1 + 60, py1 + 20
+    fs, lh = 0.35, 14
+    lx, y = px1 + 8, py1 + 18
 
     def _row(label, value, val_color=WHITE):
         nonlocal y
-        # Draw label
-        cv2.putText(frame, label, (lx, y), fn, fs, (230, 230, 230), 1, cv2.LINE_AA)
-        
-        # Right-align the value
+        cv2.putText(frame, label, (lx, y), fn, fs, (200, 200, 200), 1, cv2.LINE_AA)
         (vw, vh), _ = cv2.getTextSize(str(value), fn, fs, 1)
-        val_x = px2 - 10 - vw
+        val_x = px2 - 8 - vw
         cv2.putText(frame, str(value), (val_x, y), fn, fs, val_color, 1, cv2.LINE_AA)
         y += lh
 
-    _row("Shot", str(shot), NEON_GREEN if shot != '---' else GREY)
+    # Active Technique States
+    _row("Stroke", str(shot), RED if shot == 'Miss' else (NEON_GREEN if shot != '---' else GREY))
     _row("Grip", str(grip), WHITE if grip != '---' else GREY)
+    _row("Balance", str(stance), YELLOW if stance != 'Stable' else NEON_GREEN)
+    _row("Velocity", str(speed_label), WHITE)
     
-    # Divider line
-    cv2.line(frame, (px1 + 10, y - 6), (px2 - 10, y - 6), (80, 80, 80), 1)
-    y += 4
+    # Elegant Divider Line
+    cv2.line(frame, (px1 + 8, y - 4), (px2 - 8, y - 4), (80, 80, 80), 1)
+    y += 8
     
-    _row("Smashes", str(smashes), (200, 200, 255))
+    # Tabular Repetition Scoreboard
+    cv2.putText(frame, "REPETITIONS", (lx, y), fn, 0.32, (0, 220, 255), 1, cv2.LINE_AA)
+    y += 12
     
-    # Parse speed value to determine color (km/h)
-    speed_val = 0.0
-    try:
-        speed_val = float(speed_label.split(' ')[0])
-    except:
-        pass
-    ic = RED if speed_val > 12.0 else (YELLOW if speed_val > 6.0 else NEON_GREEN)
-    _row("Speed", str(speed_label), ic)
-    
-    sc = RED if stance == 'Lunging' else (YELLOW if stance == 'Leaning' else (NEON_GREEN if stance == 'Stable' else GREY))
-    _row("Balance", str(stance), sc)
-    
-    _row("Position", str(position), WHITE if position != 'N/A' else GREY)
+    _row("  Smashes", str(counts.get('Smash', 0)), (255, 100, 100))
+    _row("  Clears", str(counts.get('Clear', 0)), (255, 200, 100))
+    _row("  Drives", str(counts.get('Drive', 0)), (100, 200, 255))
+    _row("  Drops", str(counts.get('Drop', 0)), (200, 100, 255))
+    _row("  Lifts", str(counts.get('Lift', 0)), (255, 255, 100))
+    _row("  Net Shots", str(counts.get('Net Shot', 0)), (100, 255, 200))
 
-def draw_box_noskip(frame, box, ghost_frames, shot, grip, smashes, speed_label, stance, position, W, H):
-    a,b,c,d = map(int, box)
+
+def draw_player_box(frame, box, ghost_frames, shot, grip, counts, speed_label, stance, W, H):
+    """Renders the player box with glowing boundaries and updates stats overlay."""
+    a, b, c, d = map(int, box)
     
     # Glowing neon green box
-    cv2.rectangle(frame, (a,b), (c,d), NEON_GREEN, 2)
+    cv2.rectangle(frame, (a, b), (c, d), NEON_GREEN, 2)
     
-    lbl = "TRACKING LOCKED" if ghost_frames == 0 else ("REACQUIRING..." if ghost_frames <= 10 else "HOLD")
+    lbl = "SHADOW ACTIVE" if ghost_frames == 0 else "ACQUIRING POSE..."
     lbl_color = NEON_GREEN if ghost_frames == 0 else YELLOW
     
-    cv2.putText(frame, lbl, (a, max(0, b-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.35, lbl_color, 1, cv2.LINE_AA)
-    draw_data_panel(frame, box, shot, grip, smashes, speed_label, stance, position, W, H)
+    cv2.putText(frame, lbl, (a, max(0, b - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.35, lbl_color, 1, cv2.LINE_AA)
+    draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H)
 
 def process_match_video(input_path, output_filename, output_dir="processed", player1_name="Player 1", player2_name="Player 2"):
+    """
+    Core Shadow Practice rep tracker.
+    Runs at 1.0x original speed (writes every frame, skips model inference for speed via Kalman interpolation).
+    """
     start_time = time.time()
     os.makedirs(output_dir, exist_ok=True)
     out_path = os.path.join(output_dir, output_filename)
@@ -211,55 +263,54 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    # Ensure dimensions are perfectly even for H.264 web playback compatibility
+    # Ensure dimensions are perfectly even for H.264 web codec compatibility
     W = W if W % 2 == 0 else W - 1
     H = H if H % 2 == 0 else H - 1
 
-    INFER_MAX = 320
-    if W > INFER_MAX:
-        sc = INFER_MAX / W; iW, iH = int(W*sc), int(H*sc)
-    else:
-        sc = 1.0; iW, iH = W, H
-    SKIP = 4
-
-    OUT_W, OUT_H = W, H
-    sx_out, sy_out = 1.0, 1.0
-    print(f"[Tracker] {total_frames}f {W}x{H} -> {OUT_W}x{OUT_H} (1x), infer {iW}x{iH}, skip={SKIP}")
-
-    output_fps = fps / 2.0
+    # Processing every single frame to guarantee 100% precision on fast explosive shots
+    SKIP = 1
+    
+    # 1.0x Real-Time Speed configuration: Output FPS matches input FPS exactly!
+    output_fps = fps
+    
     os.environ["OPENCV_FFMPEG_WRITER_OPTIONS"] = "video_bitrate;5000000"
     fourcc = cv2.VideoWriter_fourcc(*"avc1")
-    writer = cv2.VideoWriter(out_path, fourcc, output_fps, (OUT_W, OUT_H))
+    writer = cv2.VideoWriter(out_path, fourcc, output_fps, (W, H))
     
     if not writer.isOpened():
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        writer = cv2.VideoWriter(out_path, fourcc, output_fps, (OUT_W, OUT_H))
+        writer = cv2.VideoWriter(out_path, fourcc, output_fps, (W, H))
 
-    reid = PlayerReID(ema_alpha=0.03, min_confidence=0.40)
     box_kalman = BoxKalmanFilter()
-    lookahead = LookaheadBuffer(window=4)
-    cls_fg = ShotClassifier(window_size=30)
+    lookahead = LookaheadBuffer(window=3)
+    cls_fg = ShotClassifier(window_size=30, fps=fps)
+    last_valid_torso_h = 100
 
-    # ── Action-Lock State ──
+    # ── Repetition Scoreboard counts ──
+    shot_counts = {
+        'Smash': 0, 'Clear': 0, 'Drive': 0, 'Drop': 0, 'Lift': 0, 'Net Shot': 0
+    }
+    registered_swings = []
+
+    # ── Action Hysteresis Lock States ──
     was_swinging = False
     best_swing_shot = '---'
     best_swing_grip = '---'
     locked_shot = '---'
     locked_grip = '---'
     action_hold_timer = 0
-    ACTION_HOLD_FRAMES = 20  # Hold on screen for 0.5s at 15fps to improve responsiveness
+    ACTION_HOLD_FRAMES = 15  # Keep stroke label locked on screen for 15 frames
 
     locked = False
-    fg_box = None; fg_kps = None
+    fg_box = None
+    fg_kps = None
     ghost_frames = 0
-    INTERP_MAX = 10
+    INTERP_MAX = 8
     last_good_box = None
 
     speed_tracker = SpeedTracker(fps=fps, skip=SKIP, window=5)
-    smashes_count = 0
-    last_speed_label = '0.0 km/h'; last_speed_val = 0.0
+    last_speed_label = '0.0 km/h'
     display_stance = 'N/A'
-    display_position = 'Mid Court'
     fresh_kps = False
     smooth_box = None
     BOX_PADDING = 8
@@ -269,153 +320,226 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
         ret, frame = cap.read()
         if not ret: break
         
+        # Resize for H.264 codec boundaries
+        if frame.shape[1] != W or frame.shape[0] != H:
+            frame = cv2.resize(frame, (W, H))
+            
         yolo_detected = False
+        
+        # YOLO inference executed only on SKIP steps
         if fi % SKIP == 0:
-            small = cv2.resize(frame, (iW, iH)) if sc < 1.0 else frame
-            results = model(small, verbose=False, imgsz=iW)
-            sx, sy = W/iW, H/iH
-
-            raw_dets, raw_kps = [], []
+            results = model(frame, verbose=False, imgsz=640)
+            scored = []
+            
             for r in results:
                 if r.boxes is None or r.keypoints is None: continue
                 for i, box in enumerate(r.boxes):
                     if int(box.cls[0]) != 0: continue
                     conf = float(box.conf[0].cpu().numpy())
                     if conf < 0.25: continue
+                    
                     b = box.xyxy[0].cpu().numpy()
-                    b = [max(0,min(W,b[0]*sx)), max(0,min(H,b[1]*sy)),
-                         max(0,min(W,b[2]*sx)), max(0,min(H,b[3]*sy))]
                     w_box, h_box = b[2]-b[0], b[3]-b[1]
-                    if w_box > h_box*1.5 or h_box < 75: continue
+                    # Filter out non-badminton postures (very wide boxes or too small)
+                    if w_box > h_box * 1.5 or h_box < 80: continue
+                    
                     k = r.keypoints[i].data[0].cpu().numpy().copy()
-                    k[:,0] *= sx; k[:,1] *= sy
-                    raw_dets.append((*b, conf)); raw_kps.append(k)
-
-            scored = []
-            for det, kps in zip(raw_dets, raw_kps):
-                scored.append((det, kps, compute_depth_score(det, H, W), _barea(det[:4])))
-            scored.sort(key=lambda x: x[2])
+                    
+                    # Calculate bounding box area as tracking proxy
+                    area = w_box * h_box
+                    scored.append((b, k, area))
+                    
+            # Sort by box area: Largest person (dominant closest player) is the subject
+            scored.sort(key=lambda x: x[2], reverse=True)
 
             if not locked:
-                best_initial_det, best_initial_kps, max_y = None, None, -1
-                for det, kps, depth, area in scored:
-                    cx = (det[0]+det[2])/2
-                    # Prevent locking onto umpires/benches on the extreme edges
-                    if cx < W * 0.12 or cx > W * 0.88:
-                        continue
-                    
-                    if det[3] > max_y:
-                        max_y = det[3]
-                        best_initial_det = det
-                        best_initial_kps = kps
-                        
-                # Only lock if the lowest person is clearly in the bottom half (feet > 0.65)
-                if best_initial_det is not None and max_y > H * 0.65:
-                    fg_box = best_initial_det[:4]; fg_kps = best_initial_kps; fresh_kps = True
-                    reid.register_player(0, frame, fg_box)
-                    locked = True; ghost_frames = 0
+                # Lock onto the dominant player on frame 0
+                if scored:
+                    fg_box, fg_kps, _ = scored[0]
+                    locked = True
+                    ghost_frames = 0
                     box_kalman.init(fg_box)
                     last_good_box = fg_box
                     yolo_detected = True
+                    fresh_kps = True
             else:
-                best_det, best_kps, best_score = None, None, -1
-                for det, kps, depth, area in scored:
+                best_det, best_kps, best_dist = None, None, float('inf')
+                # Find the closest bounding box to the last tracked frame to maintain lock
+                for det, kps, area in scored:
+                    cx = (det[0]+det[2])/2
                     cy = (det[1]+det[3])/2
-                    if cy < H*0.45: continue  # Reject anyone whose center is in the top half (opponent)
+                    lcx = (last_good_box[0]+last_good_box[2])/2
+                    lcy = (last_good_box[1]+last_good_box[3])/2
+                    dist = math.hypot(cx - lcx, cy - lcy)
                     
-                    # Distance gate: Prevent snapping to far-court player
-                    if last_good_box is not None:
-                        cx = (det[0]+det[2])/2
-                        lcx, lcy = (last_good_box[0]+last_good_box[2])/2, (last_good_box[1]+last_good_box[3])/2
-                        if math.hypot(cx - lcx, cy - lcy) > H * 0.20:
-                            continue
-
-                    sim = reid.get_confidence(0, frame, det[:4])
-                    # Heavily weight vertical position (det[3]) so it always prefers the bottom player
-                    score = sim*0.4 + (area/(H*W))*0.2 + (det[3]/H)*0.4
-                    if score > best_score:
-                        best_score = score; best_det = det; best_kps = kps
-
+                    # Gate tracking snaps to avoid jumping to background noise
+                    if dist < H * 0.35 and dist < best_dist:
+                        best_dist = dist
+                        best_det = det
+                        best_kps = kps
+                        
                 if best_det is not None:
-                    fg_box = best_det[:4]; fg_kps = best_kps; fresh_kps = True
-                    reid.update_features(0, frame, fg_box)
-                    yolo_detected = True; ghost_frames = 0
+                    fg_box = best_det[:4]
+                    fg_kps = best_kps
+                    yolo_detected = True
+                    ghost_frames = 0
                     last_good_box = fg_box
                     box_kalman.correct(fg_box)
+                    fresh_kps = True
 
+        # Interpolate coordinates on skipped frames using Kalman process matrix
         if locked and not yolo_detected:
             ghost_frames += 1
             kalman_box = box_kalman.predict()
             if kalman_box is not None and ghost_frames <= INTERP_MAX:
-                if last_good_box:
+                if last_good_box is not None:
                     t = min(1.0, ghost_frames / max(1, INTERP_MAX))
                     fg_box = lerp_box(last_good_box, kalman_box, t)
                 else:
                     fg_box = kalman_box
             
-            # If tracker has been stuck with no YOLO detections for too long, break the lock
-            if ghost_frames > 24:
+            # Reset locking if lost track completely
+            if ghost_frames > 20:
+                # Flush the active swing before resetting!
+                if cls_fg.swing_active and cls_fg.swing_duration >= 3 and cls_fg._peak_vel >= 0.35:
+                    final_shot = cls_fg._classify_completed_swing()
+                    if final_shot in shot_counts and final_shot != 'Neutral':
+                        # Apply shuttlecock proximity check (same as main hysteresis)
+                        min_dist_px = getattr(cls_fg, 'min_shuttle_dist_px', float('inf'))
+                        shuttle_ever_seen = getattr(cls_fg, 'shuttle_seen_count', 0) > 8
+                        
+                        if not shuttle_ever_seen or min_dist_px < last_valid_torso_h * 2.85:
+                            # Shadow practice OR shuttle was close enough
+                            shot_counts[final_shot] += 1
+                            score = cls_fg.calculate_swing_quality(final_shot)
+                            registered_swings.append({'shot_type': final_shot, 'score': score})
+                            print(f"[MATCH-DBG] *** LOST-TRACK FLUSH: {final_shot} (duration={cls_fg.swing_duration}, peak_vel={cls_fg._peak_vel:.3f})")
+                        else:
+                            print(f"[MATCH-DBG] --- Lost-track flush filtered (shuttle too far: {min_dist_px:.1f}px)")
+                
                 locked = False
                 fg_box = None
                 ghost_frames = 0
                 last_good_box = None
                 action_hold_timer = 0
-                cls_fg = ShotClassifier(window_size=30)
+                cls_fg.reset_swing_state()
 
-        # ── ACTION-LOCK LOGIC ──
+        # ── ACTION HYSTERESIS & SWING CLASSIFIER ──
         if locked and fg_kps is not None and fresh_kps and ghost_frames == 0:
-            kp_center_y = float(np.mean(fg_kps[:, 1]))
-            if kp_center_y >= H * 0.45:
-                cls_fg.update(fg_kps, H, W)
-                result = cls_fg.classify()
-    
-                if result:
-                    raw_shot = result.get('Shot', '---')
-                    raw_grip = result.get('Handle', '---')
-                    is_swinging = result.get('Is_Swinging', False)
-    
-                    if is_swinging:
-                        # Priority hierarchy: Smash > Clear > Drive > Lift > Drop > Net
-                        priorities = {'Smash': 6, 'Clear': 5, 'Drive': 4, 'Lift': 3, 'Drop': 2, 'Net': 1, 'Ready': 0, 'Neutral': 0, '---': 0}
-                        curr_prio = priorities.get(raw_shot, 0)
-                        best_prio = priorities.get(best_swing_shot, 0)
+            if len(fg_kps) >= 17:
+                lhip, rhip = fg_kps[11], fg_kps[12]
+                lsho, rsho = fg_kps[5], fg_kps[6]
+                mid_hip_y = (lhip[1] + rhip[1]) / 2.0
+                mid_sho_y = (lsho[1] + rsho[1]) / 2.0
+                last_valid_torso_h = max(20, abs(mid_hip_y - mid_sho_y))
+            
+            # ── SHUTTLECOCK TRACKING & PROXIMITY DETECTION BEFORE CLASSIFIER ──
+            if cls_fg.swing_active:
+                shuttle_model = _get_shuttle_model()
+                if shuttle_model is not None:
+                    try:
+                        shuttle_res = shuttle_model(frame, verbose=False, conf=0.10)
+                        best_conf = 0
+                        shuttle_pos = None
+                        for r in shuttle_res:
+                            if r.boxes:
+                                for box in r.boxes:
+                                    cls_id = int(box.cls[0].item())
+                                    if cls_id == 0:  # Shuttlecock
+                                        conf = box.conf[0].item()
+                                        if conf > best_conf:
+                                            best_conf = conf
+                                            b = box.xyxy[0].tolist()
+                                            shuttle_pos = ((b[0]+b[2])/2, (b[1]+b[3])/2)
                         
-                        if curr_prio > best_prio:
-                            best_swing_shot = raw_shot
-                            best_swing_grip = raw_grip
-    
-                    # Detect follow-through (swing just ended)
-                    if was_swinging and not is_swinging:
-                        # Lock it into the display!
-                        locked_shot = best_swing_shot if best_swing_shot != '---' else raw_shot
-                        locked_grip = best_swing_grip if best_swing_grip != '---' else raw_grip
-                        action_hold_timer = ACTION_HOLD_FRAMES
-                        
-                        if locked_shot == 'Smash':
-                            smashes_count += 1
+                        if shuttle_pos is not None:
+                            # Keep track of total times shuttle has been seen in this video
+                            if not hasattr(cls_fg, 'shuttle_seen_count'):
+                                cls_fg.shuttle_seen_count = 0
+                            cls_fg.shuttle_seen_count += 1
                             
-                        # Reset for next swing
-                        best_swing_shot = '---'
-                        best_swing_grip = '---'
-    
-                    was_swinging = is_swinging
-                    
-                # Update Stance and Position
-                raw_stance = compute_stance(fg_kps)
-                if raw_stance != 'N/A':
-                    display_stance = raw_stance
-                    
-                cy = (fg_box[1] + fg_box[3]) / 2
-                if cy > H * 0.75:
-                    display_position = 'Back Court'
-                elif cy < H * 0.55:
-                    display_position = 'Front Court'
-                else:
-                    display_position = 'Mid Court'
-                    
-                fresh_kps = False
+                            # Pass current shuttle position (normalized 0-1) to shot classifier
+                            cls_fg.set_shuttle_pos(shuttle_pos[0] / W, shuttle_pos[1] / H)
+                            
+                            if fg_kps is not None and len(fg_kps) >= 17:
+                                lw = fg_kps[9]
+                                rw = fg_kps[10]
+                                dist_l = math.hypot(shuttle_pos[0] - lw[0], shuttle_pos[1] - lw[1]) if lw[2] > 0.2 else float('inf')
+                                dist_r = math.hypot(shuttle_pos[0] - rw[0], shuttle_pos[1] - rw[1]) if rw[2] > 0.2 else float('inf')
+                                current_dist = min(dist_l, dist_r)
+                                
+                                if not hasattr(cls_fg, 'min_shuttle_dist_px'):
+                                    cls_fg.min_shuttle_dist_px = float('inf')
+                                if current_dist < cls_fg.min_shuttle_dist_px:
+                                    cls_fg.min_shuttle_dist_px = current_dist
+                    except Exception as e:
+                        print(f"[MatchAnalyzer] YOLO shuttle error: {e}")
 
-        # Evaluate display state based on lock timer
+            cls_fg.update(fg_kps, H, W)
+            result = cls_fg.classify()
+            
+            if result:
+                raw_shot = result.get('Shot', '---')
+                raw_grip = result.get('Handle', '---')
+                is_swinging = result.get('Is_Swinging', False)
+
+                # Hysteresis confirmation: Swing has just decelerated (follow-through completed)
+                if was_swinging and not is_swinging:
+                    final_shot = raw_shot if raw_shot != '---' else 'Neutral'
+                    final_grip = raw_grip if raw_grip != '---' else 'Forehand'
+                    
+                    # Proximity validation using custom shuttlecock model!
+                    min_dist_px = getattr(cls_fg, 'min_shuttle_dist_px', float('inf'))
+                    cls_fg.min_shuttle_dist_px = float('inf')  # Reset for next swing
+                    
+                    # Calculate torso height in pixels for real-world scaling
+                    torso_h = 100
+                    if fg_kps is not None and len(fg_kps) >= 17:
+                        lhip, rhip = fg_kps[11], fg_kps[12]
+                        lsho, rsho = fg_kps[5], fg_kps[6]
+                        mid_hip_y = (lhip[1] + rhip[1]) / 2.0
+                        mid_sho_y = (lsho[1] + rsho[1]) / 2.0
+                        torso_h = max(20, abs(mid_hip_y - mid_sho_y))
+                        last_valid_torso_h = torso_h
+                    
+                    is_shuttle_close = (min_dist_px < torso_h * 2.85)
+                    is_shuttle_miss = (torso_h * 2.85 <= min_dist_px < torso_h * 3.90)
+                    
+                    shuttle_ever_seen = getattr(cls_fg, 'shuttle_seen_count', 0) > 8
+                    
+                    if final_shot != 'Neutral':
+                        # If a shuttle is present in this video, we use proximity.
+                        # If no shuttle is seen, we allow it (for shadow practice support).
+                        if not shuttle_ever_seen or is_shuttle_close:
+                            # Valid HIT!
+                            if final_shot in shot_counts:
+                                locked_shot = final_shot
+                                locked_grip = final_grip
+                                action_hold_timer = ACTION_HOLD_FRAMES
+                                shot_counts[locked_shot] += 1
+                                registered_swings.append({'shot_type': locked_shot, 'score': cls_fg.last_swing_quality})
+                                print(f"[MATCH-DBG] *** SHOT REGISTERED: {locked_shot} ({locked_grip}) at frame {fi} (dist: {min_dist_px:.1f}px)")
+                            else:
+                                print(f"[MATCH-DBG] --- Shot skipped (Neutral/invalid) at frame {fi}")
+                        elif is_shuttle_miss:
+                            # User swung but missed! Display "Miss" in glowing RED!
+                            locked_shot = 'Miss'
+                            locked_grip = '---'
+                            action_hold_timer = ACTION_HOLD_FRAMES
+                            print(f"[MATCH-DBG] ❌ MISS REGISTERED at frame {fi} (dist: {min_dist_px:.1f}px)")
+                        else:
+                            # Ignored as wind-up / recovery movement!
+                            print(f"[MATCH-DBG] --- Wind-up/recovery filtered out at frame {fi} (dist: {min_dist_px:.1f}px)")
+
+                was_swinging = is_swinging
+                
+            # Stance/stability check
+            raw_stance = compute_stance(fg_kps)
+            if raw_stance != 'N/A':
+                display_stance = raw_stance
+            fresh_kps = False
+
+        # Manage displayed labels timers
         if action_hold_timer > 0:
             display_shot = locked_shot
             display_grip = locked_grip
@@ -424,85 +548,151 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             display_shot = '---'
             display_grip = '---'
 
-        if locked and fg_box:
+        # Speed estimation
+        if locked and fg_box is not None:
             box_height = fg_box[3] - fg_box[1]
             speed_tracker.update((fg_box[0]+fg_box[2])/2, (fg_box[1]+fg_box[3])/2, box_height)
-            last_speed_label, last_speed_val = speed_tracker.get_speed()
+            last_speed_label, _ = speed_tracker.get_speed()
 
-        if locked and fg_box and len(fg_box) == 4:
-            bw_raw = fg_box[2] - fg_box[0]
-            bh_raw = fg_box[3] - fg_box[1]
-            tight = [
-                fg_box[0] + bw_raw * 0.05,
-                fg_box[1] + bh_raw * 0.05,
-                fg_box[2] - bw_raw * 0.05,
-                fg_box[3] - bh_raw * 0.05,
-            ]
-            tw = tight[2] - tight[0]
-            th = tight[3] - tight[1]
-            if th > 0 and tw / th > 0.6:
-                excess = tw - 0.6 * th
-                tight[0] += excess / 2
-                tight[2] -= excess / 2
+        # Box smoothing
+        if locked and fg_box is not None:
             padded = (
-                max(0, int(tight[0]) - BOX_PADDING),
-                max(0, int(tight[1]) - BOX_PADDING),
-                min(W, int(tight[2]) + BOX_PADDING),
-                min(H, int(tight[3]) + BOX_PADDING),
+                max(0, int(fg_box[0]) - BOX_PADDING),
+                max(0, int(fg_box[1]) - BOX_PADDING),
+                min(W, int(fg_box[2]) + BOX_PADDING),
+                min(H, int(fg_box[3]) + BOX_PADDING),
             )
             lookahead.push(padded)
             smooth_box = lookahead.get_smoothed()
 
-        frame_hd = cv2.resize(frame, (OUT_W, OUT_H), interpolation=cv2.INTER_CUBIC)
-
-        if locked and smooth_box:
-            hd_box = (
-                int(smooth_box[0] * sx_out),
-                int(smooth_box[1] * sy_out),
-                int(smooth_box[2] * sx_out),
-                int(smooth_box[3] * sy_out),
-            )
-            
-            # Crop the player for the Zoom Box BEFORE we draw UI overlays on frame_hd
-            a, b, c, d = map(int, hd_box)
-            a_cl, b_cl, c_cl, d_cl = max(0, a), max(0, b), min(OUT_W, c), min(OUT_H, d)
+        # Render overlays directly onto frame
+        if locked and (smooth_box is not None):
+            # Crop the zoom box BEFORE drawing bounding box overlays
+            a, b, c, d = map(int, smooth_box)
+            a_cl, b_cl, c_cl, d_cl = max(0, a), max(0, b), min(W, c), min(H, d)
             zoom_crop = None
             ZW, ZH = 110, 165
             if c_cl > a_cl and d_cl > b_cl:
-                crop = frame_hd[b_cl:d_cl, a_cl:c_cl].copy()
+                crop = frame[b_cl:d_cl, a_cl:c_cl].copy()
                 zoom_crop = cv2.resize(crop, (ZW, ZH))
 
-            draw_box_noskip(frame_hd, hd_box, ghost_frames,
+            draw_player_box(frame, smooth_box, ghost_frames,
                             display_shot, display_grip,
-                            smashes_count, last_speed_label, display_stance, display_position, OUT_W, OUT_H)
+                            shot_counts, last_speed_label, display_stance, W, H)
                             
-            # Render the Zoom Box on the top right
+            # Render Zoom Box (top right)
             if zoom_crop is not None:
-                zx1, zy1 = OUT_W - ZW - 10, 10
+                zx1, zy1 = W - ZW - 10, 10
                 zx2, zy2 = zx1 + ZW, zy1 + ZH
                 
-                # Dark backing for borders
-                cv2.rectangle(frame_hd, (zx1-2, zy1-2), (zx2+2, zy2+2), (15, 20, 25), -1)
-                # Neon border
-                cv2.rectangle(frame_hd, (zx1-1, zy1-1), (zx2+1, zy2+1), NEON_GREEN, 1)
+                # Translucent dark borders
+                cv2.rectangle(frame, (zx1-2, zy1-2), (zx2+2, zy2+2), (15, 20, 25), -1)
+                cv2.rectangle(frame, (zx1-1, zy1-1), (zx2+1, zy2+1), NEON_GREEN, 1)
                 
-                # Paste the zoom crop
-                frame_hd[zy1:zy2, zx1:zx2] = zoom_crop
+                frame[zy1:zy2, zx1:zx2] = zoom_crop
                 
-                # Top Label
-                cv2.rectangle(frame_hd, (zx1-1, zy1-18), (zx1 + 75, zy1-1), NEON_GREEN, -1)
-                cv2.putText(frame_hd, "PLAYER", (zx1 + 4, zy1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0,0,0), 1, cv2.LINE_AA)
+                # Pasting zoom label
+                cv2.rectangle(frame, (zx1-1, zy1-18), (zx1 + 75, zy1-1), NEON_GREEN, -1)
+                cv2.putText(frame, "CLOSE-UP", (zx1 + 4, zy1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0,0,0), 1, cv2.LINE_AA)
 
-        writer.write(frame_hd)
+        writer.write(frame)
         fi += 1
 
-    cap.release(); writer.release()
+    cap.release()
+    
+    # ── FLUSH: Handle any in-progress swing when video ends ──
+    # If a swing was still active when the last frame was processed,
+    # force-classify it so the final shot is not missed.
+    # Use very lenient thresholds: duration >= 2 and peak_vel >= 0.30
+    # because end-of-video swings may not complete their full arc.
+    if cls_fg.swing_active and cls_fg.swing_duration >= 2 and cls_fg._peak_vel >= 0.30:
+        final_shot = cls_fg._classify_completed_swing()
+        if final_shot in shot_counts:
+            shot_counts[final_shot] += 1
+            score = cls_fg.calculate_swing_quality(final_shot)
+            registered_swings.append({'shot_type': final_shot, 'score': score})
+            print(f"[MATCH-DBG] *** END-OF-VIDEO FLUSH: {final_shot} (duration={cls_fg.swing_duration}, peak_vel={cls_fg._peak_vel:.3f})")
+        else:
+            print(f"[MATCH-DBG] --- End-of-video swing skipped (Neutral/invalid)")
+    elif cls_fg.swing_active:
+        print(f"[MATCH-DBG] --- End-of-video swing too short/slow (duration={cls_fg.swing_duration}, peak_vel={cls_fg._peak_vel:.3f})")
+    
+    # Secondary check: if was_swinging is still True at video end, the transition
+    # from swinging→not_swinging never happened in hysteresis. This means the 
+    # classify() call that would have triggered shot registration never ran.
+    # The primary flush above already handles swing_active case, so this catches
+    # the edge case where the swing ended (velocity dropped) on the VERY LAST frame
+    # but the next loop iteration (which would detect was_swinging→not_swinging) never ran.
+    if was_swinging and not cls_fg.swing_active and cls_fg.final_swing_shot != 'Neutral':
+        # The swing completed and was classified, but hysteresis never fired
+        final_shot = cls_fg.final_swing_shot
+        if final_shot in shot_counts:
+            # Check it wasn't already counted (the normal path counts it)
+            # We can't perfectly detect this, but if current_shot == final_swing_shot,
+            # the normal path already set it but hysteresis transition didn't fire
+            shot_counts[final_shot] += 1
+            registered_swings.append({'shot_type': final_shot, 'score': cls_fg.last_swing_quality})
+            print(f"[MATCH-DBG] *** END-OF-VIDEO HYSTERESIS FLUSH: {final_shot}")
+            cls_fg.final_swing_shot = 'Neutral'  # Prevent double-counting
+    
+    writer.release()
     elapsed = time.time() - start_time
-    print(f"[Tracker] Done! {fi}f in {elapsed:.1f}s")
+    print(f"[Tracker] Done! {fi} frames in {elapsed:.1f}s")
+
+    # Generate repetition summaries string
+    rep_summary = ", ".join([f"{shot}: {count}" for shot, count in shot_counts.items() if count > 0])
+    if not rep_summary:
+        rep_summary = "No swings detected."
+
+    # Calculate detailed shot share and scores for dashboard
+    total_shots = len(registered_swings)
+    strong_count = 0
+    needs_work_count = 0
+    breakdown = {}
+    
+    for shot in ['Smash', 'Clear', 'Drive', 'Drop', 'Lift', 'Net Shot']:
+        shot_scores = [s['score'] for s in registered_swings if s['shot_type'] == shot]
+        count = len(shot_scores)
+        if count > 0:
+            avg_score = round(sum(shot_scores) / count)
+            for s in shot_scores:
+                if s >= 70:
+                    strong_count += 1
+                elif s < 50:
+                    needs_work_count += 1
+            if avg_score >= 70:
+                rating = 'Strong'
+            elif avg_score >= 50:
+                rating = 'Average'
+            else:
+                rating = 'Weak'
+        else:
+            avg_score = 0
+            rating = 'N/A'
+            
+        breakdown[shot] = {
+            'count': count,
+            'score': avg_score,
+            'rating': rating,
+            'individual_scores': shot_scores
+        }
+        
+    overall_score = 0
+    if total_shots > 0:
+        overall_score = round(sum(s['score'] for s in registered_swings) / total_shots)
 
     return {
         "processed_video_filename": output_filename,
         "status": "success",
         "match_analysis": True,
-        "processing_time_sec": round(elapsed, 1)
+        "processing_time_sec": round(elapsed, 1),
+        "rep_summary": rep_summary,
+        "shot_counts": shot_counts,
+        "shadow_analysis": {
+            "overall_score": overall_score,
+            "strong_count": strong_count,
+            "needs_work_count": needs_work_count,
+            "total_shots": total_shots,
+            "breakdown": breakdown
+        }
     }

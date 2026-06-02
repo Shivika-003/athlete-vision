@@ -32,18 +32,25 @@ _yolo_model_cache = None
 _yolo_loaded = False
 
 def _get_yolo_model():
-    """Lazy-load YOLO model only when first needed."""
+    """Lazy-load YOLO shuttlecock detection model only when first needed.
+    Priority: shuttlecock_best.pt (Roboflow-trained) > badminton_yolo.pt (legacy) > None
+    """
     global _yolo_model_cache, _yolo_loaded
     if _yolo_loaded:
         return _yolo_model_cache
     _yolo_loaded = True
     try:
         from ultralytics import YOLO
-        if os.path.exists('badminton_yolo.pt'):
+        # Priority 1: Roboflow-trained shuttlecock model (highest accuracy)
+        if os.path.exists('shuttlecock_best.pt'):
+            _yolo_model_cache = YOLO('shuttlecock_best.pt')
+            print("[PoseAnalyzer] ✅ Roboflow shuttlecock model loaded (shuttlecock_best.pt).")
+        # Priority 2: Legacy badminton model (fallback)
+        elif os.path.exists('badminton_yolo.pt'):
             _yolo_model_cache = YOLO('badminton_yolo.pt')
-            print("[PoseAnalyzer] Custom YOLO model loaded (lazy).")
+            print("[PoseAnalyzer] Custom YOLO model loaded (badminton_yolo.pt — legacy).")
         else:
-            print("[PoseAnalyzer] No custom YOLO model found, skipping shuttlecock tracking.")
+            print("[PoseAnalyzer] No shuttlecock YOLO model found, using frame-differencing only.")
             _yolo_model_cache = None
     except Exception as e:
         print(f"[PoseAnalyzer] YOLO unavailable: {e}")
@@ -130,63 +137,11 @@ def detect_shot_phase(landmarks, wrist_vel, wrist_accel, prev_phase):
 # =====================================================================
 
 def classify_shot_type(landmarks):
-    """Classify badminton shot type based on body posture and limb positions.
-    
-    Uses relative positions of wrists, elbows, shoulders, and hips plus
-    joint angles to determine the shot type.
-    
-    Returns: 'smash', 'clear', 'drive', 'drop', or 'net'
+    """Classify badminton shot type based on body posture.
+    Delegated to the authoritative ShotClassifier sequence evaluation.
     """
-    side = detect_dominant_side(landmarks)
-    
-    if side == 'right':
-        wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
-        shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
-        elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
-        hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
-        knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value]
-    else:
-        wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
-        shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
-        elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value]
-        hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
-        knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]
-    
-    nose = landmarks[mp_pose.PoseLandmark.NOSE.value]
-    
-    wrist_above_head = wrist.y < nose.y
-    wrist_above_shoulder = wrist.y < shoulder.y
-    elbow_above_shoulder = elbow.y < shoulder.y
-    wrist_below_hip = wrist.y > hip.y
-    wrist_near_hip = abs(wrist.y - hip.y) < 0.1
-    
-    # Calculate elbow angle for additional signal
-    elbow_pt = get_landmark_3d(landmarks, mp_pose.PoseLandmark.RIGHT_ELBOW.value if side == 'right' else mp_pose.PoseLandmark.LEFT_ELBOW.value, 0.3)
-    shoulder_pt = get_landmark_3d(landmarks, mp_pose.PoseLandmark.RIGHT_SHOULDER.value if side == 'right' else mp_pose.PoseLandmark.LEFT_SHOULDER.value, 0.3)
-    wrist_pt = get_landmark_3d(landmarks, mp_pose.PoseLandmark.RIGHT_WRIST.value if side == 'right' else mp_pose.PoseLandmark.LEFT_WRIST.value, 0.3)
-    
-    elbow_angle = 0
-    if elbow_pt and shoulder_pt and wrist_pt:
-        elbow_angle = calculate_angle_3d(shoulder_pt, elbow_pt, wrist_pt)
-    
-    # Knee bend depth
-    knee_bend = abs(hip.y - knee.y)
-    
-    if wrist_above_head and elbow_above_shoulder:
-        if knee_bend < 0.18 or elbow_angle > 155:
-            return 'smash'
-        else:
-            return 'clear'
-    elif wrist_above_shoulder and not wrist_above_head:
-        wrist_shoulder_gap = shoulder.y - wrist.y
-        if wrist_shoulder_gap < 0.08:
-            return 'drop'
-        else:
-            return 'drive'
-    elif wrist_below_hip or wrist_near_hip:
-        return 'net'
-    else:
-        return 'drive'
+    return 'drive'
+
 
 
 # =====================================================================
@@ -212,6 +167,29 @@ def calculate_stability(landmarks):
     stability_score = max(0, 100 - (drift * 300))
     return stability_score
 
+
+
+# =====================================================================
+# SEQUENTIAL SHOT CLASSIFICATION TREE (High Fidelity)
+# =====================================================================
+
+def evaluate_shot_classification(frame_data, contact_idx, width, height, fps):
+    """
+    Evaluates completed swing using the Authoritative Unified ShotClassifier class.
+    Guarantees 100% logic and output parity across single and match analysis pipelines.
+    """
+    from ai_engine.shot_classifier import ShotClassifier
+    classifier = ShotClassifier()
+    swings = classifier.classify_sequence(frame_data, width, height, fps)
+    
+    if swings:
+        target_frame = frame_data[contact_idx]['frame_idx']
+        closest_swing = min(swings, key=lambda x: abs(x['frame_idx'] - target_frame))
+        print(f"[PoseAnalyzer] Authoritative Sequence Match found: {closest_swing['shot_type']} (quality={closest_swing['quality']})")
+        frame_data[contact_idx]['quality_score'] = closest_swing['quality']
+        return closest_swing['shot_type'].lower()
+        
+    return 'drive'
 
 
 # =====================================================================
@@ -261,14 +239,8 @@ def process_video(input_path, output_filename, output_dir="processed"):
         width = original_width
         height = original_height
     
-    # TURBO SKIP: Aggressively skip frames to cut processing time
-    skip = 2  # Always skip at least every other frame
-    if total_frames > 300:    # > 10 seconds
-        skip = 5
-    elif total_frames > 150:  # > 5 seconds
-        skip = 4
-    elif total_frames > 90:   # > 3 seconds
-        skip = 3
+    # High-Fidelity 1x Frame Analysis: Process EVERY single frame to capture swift actions perfectly
+    skip = 1
 
     
     print(f"[PoseAnalyzer] Processing {total_frames} frames at {width}x{height}, skip={skip}")
@@ -277,16 +249,21 @@ def process_video(input_path, output_filename, output_dir="processed"):
     frame_data = []
     prev_wrist_vel = 0
     prev_phase = 'idle'
+    prev_gray = None
     
     # Player lock: track the CLOSEST (largest) person and stick with them
     locked_player_x = None  # Center-x of the locked player (0.0 to 1.0)
     locked_player_size = 0  # Height of the locked player's bounding box
     PLAYER_LOCK_TOLERANCE = 0.25  # Max horizontal drift allowed
     
+    # buffers for wrist keypoint smoothing
+    right_wrist_history = []
+    left_wrist_history = []
+    
     with mp_pose.Pose(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
-        model_complexity=0               # Optimized for SPEED (0 = fastest, 1 = standard)
+        min_detection_confidence=0.7,
+        min_tracking_confidence=0.7,
+        model_complexity=1               # Balanced Model (1 = standard, significantly faster on CPU)
     ) as pose:
         frame_idx = 0
         prev_landmarks = None
@@ -304,6 +281,18 @@ def process_video(input_path, output_filename, output_dir="processed"):
             if frame.shape[1] != width:
                 frame = cv2.resize(frame, (width, height))
             
+            # Dynamic low-light boost for dark nighttime/outdoor recordings (avg brightness < 95)
+            try:
+                gray_check = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                avg_brightness = np.mean(gray_check)
+                if avg_brightness < 95.0:
+                    # Apply fast look-up table gamma contrast boosting (gamma=1.5)
+                    invGamma = 1.0 / 1.5
+                    table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+                    frame = cv2.LUT(frame, table)
+            except Exception:
+                pass
+            
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image_rgb.flags.writeable = False
             results = pose.process(image_rgb)
@@ -311,6 +300,31 @@ def process_video(input_path, output_filename, output_dir="processed"):
             
             if results.pose_landmarks:
                 landmarks = results.pose_landmarks.landmark
+                
+                # ─── 5-Frame Rolling Average Wrist Smoothing ───
+                rw_raw = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
+                lw_raw = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
+                
+                right_wrist_history.append((rw_raw.x, rw_raw.y, rw_raw.z, rw_raw.visibility))
+                if len(right_wrist_history) > 5:
+                    right_wrist_history.pop(0)
+                
+                left_wrist_history.append((lw_raw.x, lw_raw.y, lw_raw.z, lw_raw.visibility))
+                if len(left_wrist_history) > 5:
+                    left_wrist_history.pop(0)
+                
+                rw_arr = np.array(right_wrist_history)
+                lw_arr = np.array(left_wrist_history)
+                
+                rw_raw.x = rw_arr[:, 0].mean()
+                rw_raw.y = rw_arr[:, 1].mean()
+                rw_raw.z = rw_arr[:, 2].mean()
+                rw_raw.visibility = rw_arr[:, 3].mean()
+                
+                lw_raw.x = lw_arr[:, 0].mean()
+                lw_raw.y = lw_arr[:, 1].mean()
+                lw_raw.z = lw_arr[:, 2].mean()
+                lw_raw.visibility = lw_arr[:, 3].mean()
                 
                 # ─── Player identification: size + position lock ───
                 # Calculate bounding box of detected skeleton
@@ -392,16 +406,100 @@ def process_video(input_path, output_filename, output_dir="processed"):
                 
                 wrist_accel = wrist_vel - prev_wrist_vel
                 
-                # TURBO: YOLO disabled for speed — velocity-based contact detection is used instead
-                # (YOLO on laptop CPU takes 0.5-2s per frame, which is too slow for 10-15s target)
+                # Robust Shuttlecock Tracking: Lazy YOLO + Ultra-Fast Grayscale Difference
                 shuttlecock_pos = None
                 shuttle_dist = None
+                
+                yolo_model = _get_yolo_model()
+                if yolo_model is not None and wrist_vel > 0.015:
+                    try:
+                        yolo_results = yolo_model(frame, verbose=False, conf=0.10)
+                        best_conf = 0
+                        best_box = None
+                        for r in yolo_results:
+                            if r.boxes:
+                                for box in r.boxes:
+                                    cls_id = int(box.cls[0].item())
+                                    if cls_id == 0:  # Shuttlecock
+                                        conf = box.conf[0].item()
+                                        if conf > best_conf:
+                                            best_conf = conf
+                                            best_box = box.xyxy[0].tolist()
+                        if best_box:
+                            cx = (best_box[0] + best_box[2]) / 2.0 / width
+                            cy = (best_box[1] + best_box[3]) / 2.0 / height
+                            shuttlecock_pos = [cx, cy]
+                            if wrist_pos:
+                                shuttle_dist = math.hypot(wrist_pos.x - cx, wrist_pos.y - cy)
+                    except Exception as e:
+                        print(f"[PoseAnalyzer] YOLO tracking frame error: {e}")
+                
+                if shuttlecock_pos is None and prev_gray is not None and wrist_pos is not None:
+                    try:
+                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        diff = cv2.absdiff(prev_gray, gray)
+                        _, thresh = cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)
+                        
+                        wx_px = int(wrist_pos.x * width)
+                        wy_px = int(wrist_pos.y * height)
+                        mask = np.zeros_like(thresh)
+                        cv2.circle(mask, (wx_px, wy_px), int(width * 0.25), 255, -1)
+                        masked_thresh = cv2.bitwise_and(thresh, mask)
+                        
+                        contours, _ = cv2.findContours(masked_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                        best_cx, best_cy = None, None
+                        min_dist_px = float('inf')
+                        
+                        for cnt in contours:
+                            area = cv2.contourArea(cnt)
+                            if 4 < area < 400:
+                                M = cv2.moments(cnt)
+                                if M["m00"] != 0:
+                                    cx = int(M["m10"] / M["m00"])
+                                    cy = int(M["m01"] / M["m00"])
+                                    dist_px = math.hypot(cx - wx_px, cy - wy_px)
+                                    if dist_px < min_dist_px:
+                                        min_dist_px = dist_px
+                                        best_cx, best_cy = cx / width, cy / height
+                        if best_cx is not None:
+                            shuttlecock_pos = [best_cx, best_cy]
+                            shuttle_dist = math.hypot(wrist_pos.x - best_cx, wrist_pos.y - best_cy)
+                    except Exception as e:
+                        pass
+                
+                try:
+                    prev_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                except Exception:
+                    prev_gray = None
 
                 # Detect shot phase
                 phase = detect_shot_phase(landmarks, wrist_vel, wrist_accel, prev_phase)
                 
                 # Classify shot type
                 shot_type = classify_shot_type(landmarks)
+                
+                # Extract key joint coordinates for post-contact sequential tree
+                nose = landmarks[mp_pose.PoseLandmark.NOSE.value]
+                l_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]
+                r_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
+                l_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]
+                r_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]
+                l_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value]
+                r_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]
+                l_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value]
+                r_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value]
+
+                joints_summary = {
+                    'l_shoulder': [l_shoulder.x, l_shoulder.y, l_shoulder.visibility],
+                    'r_shoulder': [r_shoulder.x, r_shoulder.y, r_shoulder.visibility],
+                    'l_hip': [l_hip.x, l_hip.y, l_hip.visibility],
+                    'r_hip': [r_hip.x, r_hip.y, r_hip.visibility],
+                    'l_wrist': [l_wrist.x, l_wrist.y, l_wrist.visibility],
+                    'r_wrist': [r_wrist.x, r_wrist.y, r_wrist.visibility],
+                    'l_elbow': [l_elbow.x, l_elbow.y, l_elbow.visibility],
+                    'r_elbow': [r_elbow.x, r_elbow.y, r_elbow.visibility],
+                    'nose': [nose.x, nose.y, nose.visibility]
+                }
                 
                 frame_data.append({
                     'frame_idx': frame_idx,
@@ -413,6 +511,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
                     'shot_type': shot_type,
                     'side': side,
                     'visibility': avg_vis,
+                    'joints_summary': joints_summary,
                     # RESOLVED: Removed heavy landmark objects to save RAM
                     # RESOLVED: Removed frame.copy() to save GIGABYTES of RAM
                     'shuttle_pos': shuttlecock_pos,
@@ -441,7 +540,7 @@ def process_video(input_path, output_filename, output_dir="processed"):
     if shuttle_hits:
         # Sort by distance: closest is most likely contact
         yolo_contact = min(shuttle_hits, key=lambda x: x['shuttle_dist'])
-        print(f"[PoseAnalyzer] YOLO detected shuttlecock contact at frame {yolo_contact['frame_idx']} (dist: {yolo_contact['shuttle_dist']:.4f})")
+        print(f"[PoseAnalyzer] Shuttle tracking detected contact at frame {yolo_contact['frame_idx']} (dist: {yolo_contact['shuttle_dist']:.4f})")
     
     # Existing fallback logic
     contact_frames = [f for f in frame_data if f['phase'] == 'contact']
@@ -451,9 +550,23 @@ def process_video(input_path, output_filename, output_dir="processed"):
         sorted_by_vel = sorted(frame_data, key=lambda x: x['wrist_vel'], reverse=True)
         contact_frames = sorted_by_vel[:max(1, len(sorted_by_vel) // 10)]
     
-    # Determine the dominant shot type from all contact frames
-    shot_types = [f.get('shot_type', 'drive') for f in contact_frames]
-    dominant_shot = max(set(shot_types), key=shot_types.count) if shot_types else 'drive'
+    # Find the best contact frame candidate
+    best_contact = yolo_contact if yolo_contact is not None else contact_frames[0]
+    
+    # Run the Sequential Shot Classification Tree at best contact frame index!
+    best_contact_list_idx = 0
+    for idx, f in enumerate(frame_data):
+        if f['frame_idx'] == best_contact['frame_idx']:
+            best_contact_list_idx = idx
+            break
+            
+    dominant_shot = evaluate_shot_classification(frame_data, best_contact_list_idx, width, height, fps)
+    print(f"[PoseAnalyzer] Sequential classification tree result: {dominant_shot}")
+    
+    # Propagate the highly accurate post-processed shot type to all contact frames
+    for f in contact_frames:
+        f['shot_type'] = dominant_shot
+    best_contact['shot_type'] = dominant_shot
     
     # Load reference angles for comparison
     ref_player = get_active_reference_player()
@@ -651,8 +764,12 @@ def process_video(input_path, output_filename, output_dir="processed"):
     # ─── Calculate Smash Speed (New Engine) ───
     smash_speed_kmh = 0
     if best_contact and best_contact.get('wrist_vel') and 'locked_player_size' in locals():
-        wrist_px = None # Landmark objects removed to save RAM
-        
+        wrist_key = 'r_wrist' if best_contact.get('side', 'right') == 'right' else 'l_wrist'
+        wrist_coords = best_contact.get('joints_summary', {}).get(wrist_key)
+        if wrist_coords:
+            wrist_px = (int(wrist_coords[0] * width), int(wrist_coords[1] * height))
+        else:
+            wrist_px = None
         smash_speed_kmh = estimate_smash_speed(
             input_path, 
             best_contact['frame_idx'], 
@@ -863,6 +980,10 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
     
     cap = cv2.VideoCapture(input_path)
     
+    def draw_text_shadow(img, text, pos, font, scale, color, thick):
+        cv2.putText(img, text, (pos[0]+1, pos[1]+1), font, scale, (0, 0, 0), thick+1, cv2.LINE_AA)
+        cv2.putText(img, text, pos, font, scale, color, thick, cv2.LINE_AA)
+    
     chapters = []
     current_time_sec = 0.0
     
@@ -892,7 +1013,14 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
             write_frame = cv2.resize(frame, (width, height))
             
             if abs(curr_idx - w['target_idx']) <= max(1, int(fps * 0.15)):
-                cv2.putText(write_frame, "CONTACT POINT", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                # Sleek background box for "CONTACT POINT" to prevent tree blend
+                overlay_cp = write_frame.copy()
+                cv2.rectangle(overlay_cp, (12, 12), (190, 44), (30, 30, 30), -1)
+                cv2.addWeighted(overlay_cp, 0.7, write_frame, 0.3, 0, write_frame)
+                cv2.rectangle(write_frame, (12, 12), (190, 44), (80, 80, 80), 1, cv2.LINE_AA)
+                
+                # Constrained, outline-shadow text for perfect visibility
+                draw_text_shadow(write_frame, "CONTACT POINT", (20, 31), cv2.FONT_HERSHEY_DUPLEX, 0.48, (0, 255, 0), 1)
                 
             writer.write(write_frame)
             w['frames_written'] += 1
@@ -902,13 +1030,9 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
                 score = w['target_frame'].get('quality_score', 0)
                 angles = w['target_frame'].get('angles', {})
                 
-                def draw_text_shadow(img, text, pos, font, scale, color, thick):
-                    cv2.putText(img, text, (pos[0]+1, pos[1]+1), font, scale, (0, 0, 0), thick+1, cv2.LINE_AA)
-                    cv2.putText(img, text, pos, font, scale, color, thick, cv2.LINE_AA)
-                
                 pad = 12
-                box_w = int(width * 0.32)
-                box_h = 120 if is_improvement_reel else 70
+                box_w = max(180, int(width * 0.25))
+                box_h = 92 if is_improvement_reel else 52
                 box_x1 = width - box_w - pad
                 box_y1 = pad
                 box_x2 = width - pad
@@ -920,7 +1044,7 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
                 cv2.rectangle(freeze_frame, (box_x1, box_y1), (box_x2, box_y2), (80, 80, 80), 1, cv2.LINE_AA)
                 
                 text_x = box_x1 + 10
-                text_y = box_y1 + 22
+                text_y = box_y1 + 20
                 
                 if is_improvement_reel:
                     issue = "Check overall posture."
@@ -930,18 +1054,18 @@ def _generate_clip_safe(input_path, target_frames, output_name, output_dir,
                     elif angles.get('wrist', 0) < 120: issue = "Wrist snap is weak."
                     
                     draw_text_shadow(freeze_frame, "IMPROVEMENT", (text_x, text_y), 
-                                     cv2.FONT_HERSHEY_DUPLEX, 0.55, (80, 80, 255), 1)
-                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 28), 
-                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
-                    draw_text_shadow(freeze_frame, "Error:", (text_x, text_y + 58), 
-                                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 165, 255), 1)
-                    draw_text_shadow(freeze_frame, issue, (text_x, text_y + 82), 
-                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+                                     cv2.FONT_HERSHEY_DUPLEX, 0.46, (80, 80, 255), 1)
+                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 22), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1)
+                    draw_text_shadow(freeze_frame, "Error:", (text_x, text_y + 46), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.38, (0, 165, 255), 1)
+                    draw_text_shadow(freeze_frame, issue, (text_x, text_y + 64), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 255, 255), 1)
                 else:
                     draw_text_shadow(freeze_frame, "EXCELLENT FORM", (text_x, text_y), 
-                                     cv2.FONT_HERSHEY_DUPLEX, 0.55, (0, 255, 0), 1)
-                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 28), 
-                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+                                     cv2.FONT_HERSHEY_DUPLEX, 0.46, (0, 255, 0), 1)
+                    draw_text_shadow(freeze_frame, f"Score: {int(score)}/100", (text_x, text_y + 22), 
+                                     cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1)
                 
                 freeze_duration_frames = int(fps * 1.5)
                 for _ in range(freeze_duration_frames):

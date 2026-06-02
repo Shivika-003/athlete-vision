@@ -21,27 +21,78 @@
     </style>
 </head>
 <body>
+    {% if current_user.is_authenticated %}
+    <div class="app-layout">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+                <div>
+                    <h3>Athlete Vision</h3>
+                    <p>AI MOTION LAB</p>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.path == url_for('dashboard') %}active{% endif %}">
+                    <span class="icon">📊</span>
+                    <div class="nav-item-text">
+                        <span class="title">Dashboard</span>
+                        <span class="desc">Overview & stats</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('dashboard') }}#upload-section" class="nav-item">
+                    <span class="icon">📤</span>
+                    <div class="nav-item-text">
+                        <span class="title">Analyze Video</span>
+                        <span class="desc">Upload & analyze</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('history') }}" class="nav-item {% if request.path == url_for('history') %}active{% endif %}">
+                    <span class="icon">📜</span>
+                    <div class="nav-item-text">
+                        <span class="title">History</span>
+                        <span class="desc">Past sessions</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('learning_center') }}" class="nav-item {% if request.path == url_for('learning_center') %}active{% endif %}">
+                    <span class="icon">🏸</span>
+                    <div class="nav-item-text">
+                        <span class="title">Learning Center</span>
+                        <span class="desc">Coaching drills</span>
+                    </div>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="{{ url_for('dashboard') }}#live-cam-zone" class="quick-analyze-badge">
+                    <span class="lightning-icon">⚡</span>
+                    <div class="badge-text">
+                        <span class="badge-title">Quick Analyze</span>
+                        <span class="badge-desc">Upload a video for instant feedback</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('profile') }}" class="profile-link">👤 My Profile</a>
+                <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+    {% else %}
     <header>
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard') }}" class="logo">ATHLETE VISION</a>
-        {% else %}
-            <a href="{{ url_for('index') }}" class="logo">ATHLETE VISION</a>
-        {% endif %}
+        <a href="{{ url_for('index') }}" class="logo">ATHLETE VISION</a>
         <nav class="nav-links">
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('reference') }}">Reference Pro</a>
-                <a href="{{ url_for('learning_center') }}">Learning Center</a>
-                <a href="{{ url_for('profile') }}">My Profile</a>
-                <a href="{{ url_for('logout') }}" style="color: #ef4444;">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}" class="btn" style="color:white; margin-left:1rem;">Sign Up</a>
-            {% endif %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}" class="btn" style="color:white; margin-left:1rem;">Sign Up</a>
         </nav>
     </header>
 
     <main>
+    {% endif %}
+
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             {% for message in messages %}
@@ -53,9 +104,14 @@
         {% endwith %}
         
         {% block content %}{% endblock %}
+
+    {% if current_user.is_authenticated %}
+        </div>
+    </div>
+    {% else %}
     </main>
 
-    <footer style="background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(0, 212, 255, 0.1); padding: 2.5rem 5%; margin-top: auto;">
+    <footer style="background: #f1f5f9; border-top: 1px solid rgba(22, 163, 74, 0.1); padding: 2.5rem 5%; margin-top: auto;">
         <div style="max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
             <div>
                 <a href="/" style="font-weight: 800; font-size: 1.1rem; letter-spacing: 2px; text-transform: uppercase; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none;">ATHLETE VISION</a>
@@ -68,5 +124,6 @@
             </div>
         </div>
     </footer>
+    {% endif %}
 </body>
 </html>

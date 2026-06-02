@@ -4,271 +4,367 @@
 <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
 
 <div class="fade-in">
+    <!-- ═══════════ PERFORMANCE HUB HEADER ═══════════ -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <p style="color: #16a34a; font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">PERFORMANCE HUB</p>
+            <h1 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">Dashboard</h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Track your badminton technique over time</p>
+        </div>
+        <a href="#upload-section" class="btn" style="display: flex; align-items: center; gap: 0.5rem; border-radius: 12px; background: #16a34a; padding: 0.7rem 1.5rem; font-size: 0.95rem; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2);">
+            <span>+</span> New Analysis
+        </a>
+    </div>
 
     <!-- ═══════════ STATS STRIP ═══════════ -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
-        <!-- Reference Player Card -->
-        <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; text-decoration: none;" onclick="window.location='{{ url_for('reference') }}'">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🏸</div>
+    {% set ns = namespace(best_score=0) %}
+    {% for r in records %}
+      {% if r.status == 'completed' and r.performance_score and r.performance_score > ns.best_score %}
+        {% set ns.best_score = r.performance_score %}
+      {% endif %}
+    {% endfor %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+        <!-- Card 1: Total Sessions -->
+        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
             <div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Benchmark</p>
-                <p style="font-weight: 800; font-size: 1.1rem; color: var(--accent-cyan);">{{ ref_player.name if ref_player else 'Not Set' }}</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Total Sessions</p>
+                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ total_sessions }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">1 completed</p>
             </div>
+            <div class="stat-icon-wrapper icon-green">📹</div>
         </div>
 
-        <!-- Similarity Score & Rank -->
-        <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #22c55e, #16a34a); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">📊</div>
+        <!-- Card 2: Avg Score -->
+        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
             <div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Avg Similarity</p>
-                <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-                    <p style="font-weight: 800; font-size: 1.3rem; color: {% if avg_similarity >= 80 %}#22c55e{% elif avg_similarity >= 60 %}#eab308{% else %}#ef4444{% endif %}; margin: 0;">{{ avg_similarity }}%</p>
-                    <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; background: rgba(34,197,94,0.1); color: #22c55e; font-weight: 700;">
-                        {% if avg_similarity >= 85 %}👑 Pro{% elif avg_similarity >= 70 %}⭐ Advanced{% elif avg_similarity >= 50 %}📈 Intermediate{% else %}🌱 Beginner{% endif %}
-                    </span>
-                </div>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Avg Score</p>
+                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ "%.0f"|format(avg_similarity) }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">out of 100</p>
             </div>
+            <div class="stat-icon-wrapper icon-purple">🎯</div>
         </div>
 
-        <!-- Training Streak -->
-        <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🔥</div>
+        <!-- Card 3: Best Score -->
+        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
             <div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Streak</p>
-                <p style="font-weight: 800; font-size: 1.3rem; color: var(--text-main);">{{ streak }} day{{ 's' if streak != 1 }}</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Best Score</p>
+                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ "%.0f"|format(ns.best_score) }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">personal best</p>
             </div>
+            <div class="stat-icon-wrapper icon-gold">🏆</div>
         </div>
 
-        <!-- Total Sessions -->
-        <div class="card" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--accent-pink), #f43f5e); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;">🎯</div>
+        <!-- Card 4: Day Streak -->
+        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
             <div>
-                <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.15rem;">Sessions</p>
-                <p style="font-weight: 800; font-size: 1.3rem; color: var(--text-main);">{{ total_sessions }}</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Day Streak</p>
+                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ streak }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">active days</p>
             </div>
+            <div class="stat-icon-wrapper icon-pink">🔥</div>
         </div>
     </div>
 
     <!-- ═══════════ ANALYTICS ROW ═══════════ -->
     <div class="dashboard-grid" style="margin-bottom: 2rem;">
-        
-        <!-- SKILL MATRIX -->
-        <div class="card animate-fade-in-up" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 0;">
-            <div>
-                <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">🧬 Biomechanical Skill Matrix</h3>
-                <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem;">
-                    Your averaged form across all sessions. Focus training on lagging dimensions.
-                </p>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
-                        <span style="color: var(--text-muted);">Arm Extension</span>
-                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
-                            <div style="height: 100%; width: {{ avg_arm }}%; background: var(--accent-pink);"></div>
-                        </div>
-                        <strong style="color: var(--text-main);">{{ avg_arm }}%</strong>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
-                        <span style="color: var(--text-muted);">Knee Bend</span>
-                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
-                            <div style="height: 100%; width: {{ avg_knee }}%; background: var(--accent-cyan);"></div>
-                        </div>
-                        <strong style="color: var(--text-main);">{{ avg_knee }}%</strong>
-                    </div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem;">
-                        <span style="color: var(--text-muted);">Core Pivot</span>
-                        <div style="flex: 1; margin: 0 0.5rem; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
-                            <div style="height: 100%; width: {{ avg_hip }}%; background: #22c55e;"></div>
-                        </div>
-                        <strong style="color: var(--text-main);">{{ avg_hip }}%</strong>
-                    </div>
-                </div>
-            </div>
-            <div style="width: 100%; height: 200px; display: flex; justify-content: center; margin-top: auto;">
-                <canvas id="skillMatrixChart"></canvas>
+        <!-- TECHNIQUE ACCURACY TREND CHART -->
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 1.5rem;">
+            <h3 style="margin-bottom: 0.5rem;">📈 Technique Progress Trend <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(Biomechanical standard)</span></h3>
+            <div style="width: 100%; height: 350px;">
+                <canvas id="similarityChart"></canvas>
             </div>
         </div>
 
-        <!-- SIMILARITY TREND CHART -->
-        <div class="card" style="margin-bottom: 0;">
-            <h3 style="margin-bottom: 1.5rem;">📈 Similarity Trend <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(vs. Pro)</span></h3>
-            <div style="height: 250px;">
-                <canvas id="similarityChart"></canvas>
+        <!-- AI COACHING QUICK TIPS -->
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; background: linear-gradient(135deg, rgba(22, 163, 74, 0.03) 0%, rgba(13, 148, 136, 0.05) 100%);">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem;">
+                    <span style="font-size: 1.4rem;">🧠</span>
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #1e293b;">AI Coaching Tips</h3>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {% set tips = [] %}
+                    {% set completed_records = records | selectattr('status', 'equalto', 'completed') | list %}
+
+                    {% if completed_records | length == 0 %}
+                        <!-- Default tips for new users -->
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #16a34a;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">🎯</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Upload Your First Video</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Record a 30-60 second practice session and get personalized feedback on your technique.</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #0d9488;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">📐</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Focus on Elbow Angle</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Maintain 90-120° elbow angle during overhead shots for maximum power and reduced injury risk.</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #8b5cf6;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">🦵</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Knee Bend Matters</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Deep knee flexion (140-160°) generates explosive court movement and better shot stability.</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Dynamic tips based on user's performance data -->
+                        {% set avg = avg_similarity %}
+                        {% if avg < 50 %}
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #ef4444;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">⚡</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Posture Fundamentals</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Your avg score is {{ "%.0f"|format(avg) }}%. Focus on basic stance — feet shoulder-width, racket up, knees bent.</p>
+                            </div>
+                        </div>
+                        {% elif avg < 70 %}
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #f59e0b;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">📈</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Good Progress — Refine Timing</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">At {{ "%.0f"|format(avg) }}% accuracy, focus on wrist snap timing and follow-through consistency.</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #16a34a;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">🏆</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Excellent Form!</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">{{ "%.0f"|format(avg) }}% accuracy — your technique is strong. Try advanced drills and deception shots.</p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #0d9488;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">🔥</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">{{ streak }}-Day Streak Active</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Consistency is key! Keep practicing daily to build muscle memory and reach new personal bests.</p>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #8b5cf6;">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;">🎯</span>
+                            <div>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Next Goal: {{ "%.0f"|format(ns.best_score + 5) }}% Best Score</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Your personal best is {{ "%.0f"|format(ns.best_score) }}%. Upload another session to beat your record!</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="text-align: right; border-top: 1px solid rgba(22, 163, 74, 0.08); padding-top: 0.75rem;">
+                <a href="{{ url_for('history') }}" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.85rem; text-decoration: none;">View All Sessions &rarr;</a>
             </div>
         </div>
     </div>
 
     <!-- ═══════════ UPLOAD SECTION ═══════════ -->
-    <div class="upload-container card">
-        <h2 style="margin-bottom: 0.5rem; color: var(--text-main);">🤖 Upload Video for AI Analysis</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload any badminton video — the AI will detect players, draw bounding boxes, and analyze every shot.</p>
+    <div id="upload-section" class="card" style="margin-bottom: 3rem; padding: 3rem;">
+        <p style="color: #16a34a; font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.5rem; text-align: center;">BADMINTON PERFORMANCE LAB</p>
+        <h2 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.5px;">Analyze your badminton video in one click</h2>
+        <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">Upload rally footage and get instant shot scoring, coaching tips, and playable best/worst moments.</p>
         
         <!-- MODE SELECTOR TOGGLE -->
-        <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 14px; padding: 0.35rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+        <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 2.5rem; background: rgba(0,0,0,0.05); border-radius: 14px; padding: 0.35rem; max-width: 500px; margin-left: auto; margin-right: auto;">
             <button type="button" id="modeBtn_single" onclick="setAnalysisMode('single')"
-                style="flex: 1; padding: 0.7rem 1.25rem; border: none; border-radius: 11px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);">
+                style="flex: 1; padding: 0.7rem 1.25rem; border: none; border-radius: 11px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; background: #16a34a; color: white; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);">
                 🏸 Analyze My Form
             </button>
             <button type="button" id="modeBtn_match" onclick="setAnalysisMode('match')"
                 style="flex: 1; padding: 0.7rem 1.25rem; border: none; border-radius: 11px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; background: transparent; color: var(--text-muted);">
-                👥 Match Analysis
+                👥 Shadow Practice Reps
             </button>
         </div>
 
-        <!-- CALIBRATION GUIDE (changes per mode) -->
-        <div id="guide_single" style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Close-Up View</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film yourself playing from the side. Make sure your <strong>full body</strong> is visible.</p>
-            </div>
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🏸 Show Your Shots</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Include clear smash, drive, or drop shots. The AI will detect and classify each one.</p>
-            </div>
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">📐 Bounding Boxes</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">The AI draws <strong>blue bounding boxes</strong> around you and analyzes joint angles at contact.</p>
-            </div>
-        </div>
-        <div id="guide_match" style="display: none; background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.25rem; margin-bottom: 2rem; display: none; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🎥 Full Court View</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Film from a <strong>high angle</strong> showing the <strong>full court</strong> with both players visible.</p>
-            </div>
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">👥 Two Players</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">Ensure <strong>both players</strong> are visible throughout the rally for accurate tracking.</p>
-            </div>
-            <div>
-                <h4 style="color: var(--accent-cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🏸 Match Tracking</h4>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0; line-height: 1.5;">AI draws <strong>orange/yellow boxes</strong> around each player with live shot classification.</p>
-            </div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
             <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm" style="display: flex; flex-direction: column; height: 100%;">
                 <input type="hidden" name="analysis_mode" id="analysis_mode_input" value="single">
                 <input type="hidden" name="player_coords" id="player_coords_input">
 
-                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
-                    <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    <p id="uploadLabel" style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
-                    <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="document.getElementById('uploadForm').submit()">
+                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem; border: 2px dashed rgba(22, 163, 74, 0.25); background: rgba(22, 163, 74, 0.02); min-height: 220px; border-radius: 16px; transition: all 0.3s; cursor: pointer;">
+                    <div id="upload-prompt-view" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p id="uploadLabel" style="color: var(--text-main); font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
+                    </div>
+
+                    <div id="upload-selected-view" style="display: none; align-items: center; gap: 0.75rem; background: #ffffff; padding: 0.6rem 1.25rem; border-radius: 99px; border: 1px solid rgba(22, 163, 74, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.03); max-width: 90%;">
+                        <span style="font-size: 1.25rem; color: #16a34a;">📹</span>
+                        <div style="text-align: left; overflow: hidden;">
+                            <p id="selected-file-name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"></p>
+                            <p id="selected-file-size" style="font-size: 0.75rem; color: var(--text-muted); margin: 0;"></p>
+                        </div>
+                        <button type="button" onclick="discardSelectedFile(event)" style="background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 0 0.25rem; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
+                    </div>
+                    
+                    <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="handleFileSelection(this)">
                 </div>
+                <button type="submit" id="start-analysis-btn" class="btn" style="display: none; width: 100%; margin-top: 1rem; padding: 0.9rem; border-radius: 12px; font-weight: 700; background: #16a34a; font-size: 1.05rem; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.25);">
+                    🚀 START AI ANALYSIS
+                </button>
             </form>
-                
+            
             <!-- Live Camera Box -->
-            <div class="upload-area" id="live-cam-zone" style="background: rgba(244, 114, 182, 0.03); border-color: rgba(244, 114, 182, 0.35); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; margin: 0; min-height: 250px;">
+            <div class="upload-area" id="live-cam-zone" style="background: rgba(167, 139, 250, 0.02); border: 2px dashed rgba(167, 139, 250, 0.25); border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; margin: 0; min-height: 250px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='rgba(167, 139, 250, 0.05)'; this.style.borderColor='#8b5cf6';" onmouseout="this.style.background='rgba(167, 139, 250, 0.02)'; this.style.borderColor='rgba(167, 139, 250, 0.25)';">
                 <div id="cam-ui-initial" style="text-align: center;">
-                    <svg width="50" height="50" fill="none" stroke="var(--accent-pink)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">
+                    <svg width="50" height="50" fill="none" stroke="#8b5cf6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
-                    <p style="color: var(--text-main); font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
+                    <p style="color: var(--text-main); font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Record a short video instantly.</p>
-                    <button type="button" class="btn btn-pink" onclick="startCamera()" style="padding: 0.6rem 2rem; font-size: 1rem;">Enable Camera</button>
+                    <button type="button" class="btn" style="background: #8b5cf6; box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);" onclick="startCamera()">Enable Camera</button>
                 </div>
                 
                 <div id="cam-ui-recording" style="display: none; position: relative; width: 100%;">
-                    <video id="liveVideo" autoplay muted playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--accent-pink); background: #000;"></video>
+                    <video id="liveVideo" autoplay muted playsinline style="max-height: 480px; width: 100%; max-width: 750px; border-radius: 12px; border: 1px solid #8b5cf6; background: #000; display: block; margin: 0 auto; object-fit: contain;"></video>
                     <canvas id="output_canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; pointer-events: none; z-index: 5;"></canvas>
-                    <div id="countdownOverlay" style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; font-weight: 800; color: white; text-shadow: 0 0 20px var(--accent-pink); display: none; z-index: 10;">5</div>
+                    <div id="countdownOverlay" style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; font-weight: 800; color: white; text-shadow: 0 0 20px #8b5cf6; display: none; z-index: 10;">5</div>
                     <div id="recordingIndicator" style="display: none; position: absolute; top: 10px; right: 10px; background: rgba(239, 68, 68, 0.9); padding: 4px 10px; border-radius: 8px; color: white; font-weight: bold; font-size: 0.8rem; animation: pulse 1s infinite; z-index: 10;">🔴 REC</div>
                     
-                    <button type="button" class="btn btn-pink" id="recordBtn" onclick="startCountdown()" style="margin-top: 1rem; width: 100%;">🔴 Start Timer (5s)</button>
-                    <button type="button" class="btn btn-pink" id="stopRecordBtn" onclick="stopRecording()" style="margin-top: 1rem; width: 100%; display: none; background: linear-gradient(135deg, #ef4444, #b91c1c);">⏹️ Stop Recording</button>
+                    <button type="button" class="btn" id="recordBtn" onclick="startCountdown()" style="margin-top: 1rem; width: 100%; background: #8b5cf6;">🔴 Start Timer (5s)</button>
+                    <button type="button" class="btn" id="stopRecordBtn" onclick="stopRecording()" style="margin-top: 1rem; width: 100%; display: none; background: linear-gradient(135deg, #ef4444, #b91c1c);">⏹️ Stop Recording</button>
                 </div>
                 
                 <div id="cam-ui-review" style="display: none; width: 100%; text-align: center;">
                     <h3 style="margin-bottom: 1rem; font-size: 1.2rem; color: var(--text-main);">Review Shot</h3>
-                    <video id="reviewVideo" controls playsinline style="width: 100%; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1rem; background: #000;"></video>
+                    <video id="reviewVideo" controls playsinline style="max-height: 480px; width: 100%; max-width: 750px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1rem; background: #000; display: block; margin: 0 auto; object-fit: contain;"></video>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <button type="button" class="btn" style="background: linear-gradient(135deg, #ef4444, #b91c1c);" onclick="discardRecording()">🗑️ Discard</button>
-                        <button type="button" class="btn animate-glow" style="background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="uploadRecording()">🚀 Analyze</button>
+                        <button type="button" class="btn animate-glow" style="background: #16a34a;" onclick="uploadRecording()">🚀 Analyze</button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- TWO COLUMN FAST INSIGHTS / UPLOAD GUIDE -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 1rem;">
+            <!-- Left Card: Fast Insights -->
+            <div class="card" style="background: rgba(248, 250, 249, 0.5); border: 1px solid rgba(22, 163, 74, 0.08); padding: 1.75rem; border-radius: 16px; box-shadow: none;">
+                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">Fast insights</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.25rem;">The app processes pose data and wrist impact frames to identify and score your key shots.</p>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 500;">
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Real-time progress updates
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Best and worst shot preview videos
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Personalized practice recommendations
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right Card: Upload Guide -->
+            <div class="card" style="background: rgba(248, 250, 249, 0.5); border: 1px solid rgba(22, 163, 74, 0.08); padding: 1.75rem; border-radius: 16px; box-shadow: none;">
+                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">Upload guide</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.25rem;">Use 1-2 minute practice clips with clear court view. Longer videos are downsampled to speed up analysis.</p>
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 500;">
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.1rem;">🎥</span> MP4, MOV, or WebM only
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.1rem;">📐</span> Max 100MB
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span style="font-size: 1.1rem;">⏱️</span> Recommended length: 5s - 1min
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    <!-- ═══════════ VIDEO LOG ═══════════ -->
-    <div style="margin-bottom: 2rem;">
-        <div class="card" style="display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3>Video Log</h3>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <input type="date" id="calendarFilter" onchange="filterLogByDate()" title="Filter by Training Day" style="padding: 0.5rem; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-weight: 600;">
-                    <button id="compareBtn" class="btn btn-pink" disabled onclick="submitCompare()">Compare Selected</button>
-                </div>
-            </div>
-            
-            <div id="dailyAveragesBox" style="display:none; background: linear-gradient(135deg, rgba(22, 45, 74, 0.9), rgba(15, 30, 50, 0.95)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border: 1px solid rgba(0, 212, 255, 0.2); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);">
-                <h4 style="color: var(--accent-cyan); margin:0 0 0.75rem 0; font-size: 1.1rem; letter-spacing: 0.5px;">🗓️ Daily Performance Review</h4>
-                <p id="dailyAverageText" style="margin: 0; font-weight:400; font-size: 1.05rem; line-height: 1.6; color: #e2e8f0;"></p>
-            </div>
-            
-            <div style="overflow-y: auto; max-height: 300px; flex-grow: 1;">
-            {% set processing = false %}
-            {% if records %}
-                {% for record in records %}
-                <div class="record-item" data-date="{{ record.upload_date.strftime('%Y-%m-%d') }}" data-score="{{ record.performance_score or 0 }}" data-similarity="{{ record.similarity_score or 0 }}">
-                    <div style="display: flex; align-items: center;">
-                        <input type="checkbox" class="compare-check" value="{{ record.id }}" onclick="updateCompareButton()" {% if record.status != 'completed' %}disabled{% endif %}>
-                        <div>
-                            <p style="font-weight: 600;">{{ record.filename }}</p>
-                            <small style="color: var(--text-muted);">{{ record.upload_date.strftime('%Y-%m-%d %H:%M') }}</small>
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        {% if record.status == 'processing' %}
-                            {% set processing = true %}
-                            <!-- Unique marker for JS polling detection -->
-                            <div data-status="still-working" style="display:none;"></div>
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; width: 100px;">
-                                <div class="skeleton-box" style="width: 80%; height: 16px;"></div>
-                                <div class="skeleton-box" style="width: 50%; height: 12px;"></div>
-                                <span class="animate-pulse" style="font-size: 0.8rem; font-weight: 600; color: var(--accent-cyan); margin-top: 0.25rem;">⚙️ Processing...</span>
-                            </div>
-                        {% elif record.status == 'failed' %}
-                            <span style="font-size: 0.9rem; font-weight: 600; color: red;">Failed</span>
-                        {% else %}
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
-                                {% if record.shot_type == 'Match Analysis' %}
-                                <span style="font-size: 1.1rem; font-weight: 800; color: var(--accent-cyan);">🤖 Match AI</span>
-                                {% else %}
-                                {% if record.similarity_score %}
-                                <span style="font-size: 1.1rem; font-weight: 800; color: {% if record.similarity_score > 80 %}#4ade80{% elif record.similarity_score > 60 %}#fbbf24{% else %}#f87171{% endif %};">
-                                    {{ "%.0f"|format(record.similarity_score) }}% match
-                                </span>
-                                {% endif %}
-                                {% if record.performance_score is not none %}
-                                <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">
-                                    Score: {{ "%.1f"|format(record.performance_score) }}%
-                                </span>
-                                {% endif %}
-                                {% endif %}
-                            </div>
-                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 0.5rem;">
-                                <a href="{{ url_for('analysis', record_id=record.id) }}" style="color: var(--accent-cyan); text-decoration: none; font-size: 0.9rem; font-weight: 600;">View Full</a>
-                                <form action="{{ url_for('delete_video', record_id=record.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Delete this video permanently?');">
-                                    <button type="submit" style="background: none; border: none; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-decoration: underline;">Delete</button>
-                                </form>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p style="color: var(--text-muted);">No records yet. Upload a video above.</p>
-            {% endif %}
-            </div>
-        </div>
-    </div>
+
 </div>
 
 <script>
+    // ═══════ UPLOAD VALIDATION & DRAG-AND-DROP ═══════
+    function handleFileSelection(input) {
+        if (input.files && input.files.length > 0) {
+            const file = input.files[0];
+            const name = file.name.toLowerCase();
+            const ext = name.split('.').pop();
+            const allowed = ['mp4', 'avi', 'mov', 'mkv', 'webm'];
+            
+            if (!allowed.includes(ext)) {
+                alert('Invalid file type. Please upload MP4, AVI, MOV, MKV, or WebM.');
+                input.value = '';
+                return;
+            }
+            
+            const maxSize = 100 * 1024 * 1024; // 100 MB
+            if (file.size > maxSize) {
+                alert('File is too large! Maximum allowed size is 100 MB.');
+                input.value = '';
+                return;
+            }
+
+            // Show selected view pill
+            const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+            document.getElementById('selected-file-name').innerText = file.name;
+            document.getElementById('selected-file-size').innerText = `${sizeMb} MB`;
+            
+            document.getElementById('upload-prompt-view').style.display = 'none';
+            document.getElementById('upload-selected-view').style.display = 'flex';
+            document.getElementById('start-analysis-btn').style.display = 'block';
+        }
+    }
+
+    function discardSelectedFile(e) {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        const fileInput = document.getElementById('file-input');
+        fileInput.value = '';
+        
+        document.getElementById('upload-prompt-view').style.display = 'flex';
+        document.getElementById('upload-selected-view').style.display = 'none';
+        document.getElementById('start-analysis-btn').style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        
+        if (dropZone && fileInput) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#16a34a';
+                    dropZone.style.background = 'rgba(22, 163, 74, 0.08)';
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = 'rgba(22, 163, 74, 0.25)';
+                    dropZone.style.background = 'rgba(22, 163, 74, 0.02)';
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', e => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelection(fileInput);
+                }
+            }, false);
+        }
+    });
+
     // AUTO-REFRESH: Simple and bulletproof
     // Only reloads if a processing item exists on the page
     (function() {
@@ -285,146 +381,32 @@
         
         const singleBtn = document.getElementById('modeBtn_single');
         const matchBtn = document.getElementById('modeBtn_match');
-        const guideSingle = document.getElementById('guide_single');
-        const guideMatch = document.getElementById('guide_match');
         const uploadLabel = document.getElementById('uploadLabel');
         
         if (mode === 'match') {
-            matchBtn.style.background = 'linear-gradient(135deg, var(--accent-pink), #e04590)';
+            matchBtn.style.background = '#16a34a';
             matchBtn.style.color = 'white';
-            matchBtn.style.boxShadow = '0 4px 12px rgba(244, 114, 182, 0.3)';
+            matchBtn.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.25)';
             singleBtn.style.background = 'transparent';
             singleBtn.style.color = 'var(--text-muted)';
             singleBtn.style.boxShadow = 'none';
-            guideSingle.style.display = 'none';
-            guideMatch.style.display = 'grid';
-            uploadLabel.textContent = 'Click or drag match video to upload';
+            if (uploadLabel) uploadLabel.textContent = 'Click or drag shadow practice video to upload';
         } else {
-            singleBtn.style.background = 'linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue))';
+            singleBtn.style.background = '#16a34a';
             singleBtn.style.color = 'white';
-            singleBtn.style.boxShadow = '0 4px 12px rgba(0, 212, 255, 0.3)';
+            singleBtn.style.boxShadow = '0 4px 12px rgba(22, 163, 74, 0.25)';
             matchBtn.style.background = 'transparent';
             matchBtn.style.color = 'var(--text-muted)';
             matchBtn.style.boxShadow = 'none';
-            guideSingle.style.display = 'grid';
-            guideMatch.style.display = 'none';
-            uploadLabel.textContent = 'Click or drag your video to upload';
+            if (uploadLabel) uploadLabel.textContent = 'Click or drag your video to upload';
         }
-    }
-
-    // Logic for Compare Checkboxes (max 2)
-    function updateCompareButton() {
-        const checkboxes = document.querySelectorAll('.compare-check');
-        let checkedCount = 0;
-        checkboxes.forEach(cb => { if (cb.checked) checkedCount++; });
-        
-        checkboxes.forEach(cb => {
-            if (!cb.checked) cb.disabled = (checkedCount >= 2);
-        });
-        
-        const btn = document.getElementById('compareBtn');
-        btn.disabled = (checkedCount !== 2);
-    }
-    
-    function submitCompare() {
-        const selected = [];
-        document.querySelectorAll('.compare-check:checked').forEach(cb => selected.push(cb.value));
-        if (selected.length === 2) {
-            window.location.href = "{{ url_for('compare') }}?v1=" + selected[0] + "&v2=" + selected[1];
-        }
-    }
-
-    // Daily Average filter
-    function filterLogByDate() {
-        const selectedDate = document.getElementById('calendarFilter').value;
-        const records = document.querySelectorAll('.record-item');
-        let totalScore = 0;
-        let totalSim = 0;
-        let count = 0;
-        
-        records.forEach(record => {
-            const recordDate = record.getAttribute('data-date');
-            
-            if (!selectedDate || recordDate === selectedDate) {
-                record.style.display = 'flex';
-                if (selectedDate && parseFloat(record.getAttribute('data-score')) > 0) {
-                    totalScore += parseFloat(record.getAttribute('data-score'));
-                    totalSim += parseFloat(record.getAttribute('data-similarity') || 0);
-                    count++;
-                }
-            } else {
-                record.style.display = 'none';
-            }
-        });
-        
-        const reviewBox = document.getElementById('dailyAveragesBox');
-        if (selectedDate && count > 0) {
-            reviewBox.style.display = 'block';
-            const dailyAvg = (totalScore / count).toFixed(1);
-            const dailySim = (totalSim / count).toFixed(1);
-            
-            // Build text with spans for animated counting
-            document.getElementById('dailyAverageText').innerHTML = 
-                `You completed <strong>${count}</strong> session${count > 1 ? 's' : ''} with an Average Similarity of <strong id="simCounter" style="color: var(--accent-cyan); font-size: 1.25rem;">0.0%</strong> and Performance Score of <strong id="perfCounter" style="color: var(--accent-neon-green); font-size: 1.25rem;">0.0%</strong>!`;
-            
-            // Re-trigger counter animation
-            setTimeout(() => {
-                animateValue("simCounter", 0, parseFloat(dailySim), 1500);
-                animateValue("perfCounter", 0, parseFloat(dailyAvg), 1500);
-            }, 50);
-            
-        } else if (selectedDate && count === 0) {
-            reviewBox.style.display = 'block';
-            document.getElementById('dailyAverageText').innerHTML = `No completed sessions found for this date.`;
-        } else {
-            reviewBox.style.display = 'none';
-        }
-    }
-
-
-    // ═══════ MICRO-ANIMATIONS ═══════
-    function animateValue(id, start, end, duration) {
-        const obj = document.getElementById(id);
-        if (!obj) return;
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const currentVal = (progress * (end - start) + start).toFixed(1);
-            obj.innerHTML = currentVal + "%";
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
-            }
-        };
-        window.requestAnimationFrame(step);
     }
 
     // ═══════ SIMILARITY TREND CHART (PRIMARY) ═══════
     // Build similarity data from records
     const simLabels = {{ chart_labels | tojson | safe }};
     const perfScores = {{ chart_data | tojson | safe }};
-    
-    // Build daily similarity averages from record items
-    const simByDay = {};
-    document.querySelectorAll('.record-item').forEach(r => {
-        const d = r.getAttribute('data-date');
-        const s = parseFloat(r.getAttribute('data-similarity') || 0);
-        if (s > 0) {
-            if (!simByDay[d]) simByDay[d] = [];
-            simByDay[d].push(s);
-        }
-    });
-    
-    // Align similarity data with chart labels (which use "Mon DD" format)
-    const simScores = simLabels.map((label, idx) => {
-        // Match by index with perf scores
-        const daysWithData = Object.keys(simByDay).sort();
-        if (idx < daysWithData.length) {
-            const vals = simByDay[daysWithData[idx]];
-            return vals ? parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)) : 0;
-        }
-        return 0;
-    });
+    const simScores = {{ chart_sim_data | tojson | safe }};
 
     const simCtx = document.getElementById('similarityChart').getContext('2d');
     new Chart(simCtx, {
@@ -433,14 +415,14 @@
             labels: simLabels,
             datasets: [
                 {
-                    label: 'Similarity to Pro %',
+                    label: 'Technique Accuracy %',
                     data: simScores,
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.08)',
                     borderWidth: 3,
                     fill: true,
                     tension: 0.4,
-                    pointBackgroundColor: '#00d4ff',
+                    pointBackgroundColor: '#16a34a',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     pointRadius: 5,
@@ -449,12 +431,12 @@
                 {
                     label: 'Performance %',
                     data: perfScores,
-                    borderColor: '#ff6eb4',
-                    backgroundColor: 'rgba(255, 110, 180, 0.08)',
+                    borderColor: '#0d9488',
+                    backgroundColor: 'rgba(13, 148, 136, 0.04)',
                     borderWidth: 2.5,
                     fill: false,
                     tension: 0.4,
-                    pointBackgroundColor: '#ff6eb4',
+                    pointBackgroundColor: '#0d9488',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     pointRadius: 5,
@@ -473,12 +455,12 @@
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    grid: { color: 'rgba(255, 255, 255, 0.06)' },
-                    ticks: { color: '#a3bfdb' }
+                    grid: { color: 'rgba(0, 0, 0, 0.06)' },
+                    ticks: { color: '#64748b' }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#a3bfdb' }
+                    ticks: { color: '#64748b' }
                 }
             },
             plugins: {
@@ -486,17 +468,17 @@
                     display: true,
                     position: 'bottom',
                     labels: {
-                        color: '#ffffff',
+                        color: '#1e293b',
                         usePointStyle: true,
                         padding: 16,
                         font: { size: 12, weight: '600' }
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(22, 45, 74, 0.95)',
-                    titleColor: '#ffffff',
-                    bodyColor: '#a3bfdb',
-                    borderColor: 'rgba(0, 212, 255, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: 'rgba(22, 163, 74, 0.15)',
                     borderWidth: 1,
                     titleFont: { size: 13, weight: '700' },
                     bodyFont: { size: 12 },
@@ -507,22 +489,7 @@
         }
     });
 
-    // Auto-detect today's date (Local Timezone fix)
-    window.onload = function() {
-        const d = new Date();
-        const today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
-        const records = document.querySelectorAll('.record-item');
-        let trainedToday = false;
-        
-        records.forEach(r => {
-            if(r.getAttribute('data-date') === today) trainedToday = true;
-        });
-        
-        if (trainedToday) {
-            document.getElementById('calendarFilter').value = today;
-            filterLogByDate();
-        }
-    };
+
 
     // ═══════ LIVE WEBCAM RECORDING + AI MIRROR ═══════
     let mediaRecorder;
@@ -717,56 +684,4 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('skillMatrixChart');
-        if (!ctx) return;
-        
-        new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Arm Ext.', 'Knee Bend', 'Core Pivot', 'Similarity', 'Performance'],
-                datasets: [{
-                    label: 'Your Current Form',
-                    data: [{{ avg_arm }}, {{ avg_knee }}, {{ avg_hip }}, {{ avg_similarity }}, {{ avg_perf }}],
-                    backgroundColor: 'rgba(236, 72, 153, 0.2)',
-                    borderColor: 'rgba(236, 72, 153, 1)',
-                    pointBackgroundColor: 'rgba(236, 72, 153, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(236, 72, 153, 1)',
-                    borderWidth: 2
-                }, {
-                    label: 'Pro Benchmark',
-                    data: [100, 100, 100, 100, 100, 100],
-                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                    borderColor: 'rgba(14, 165, 233, 0.8)',
-                    pointBackgroundColor: 'rgba(14, 165, 233, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(14, 165, 233, 1)',
-                    borderDash: [5, 5],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                scales: {
-                    r: {
-                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        pointLabels: { color: 'rgba(255, 255, 255, 0.7)', font: { size: 11, family: 'Inter' } },
-                        ticks: { display: false, min: 0, max: 100 }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: 'rgba(255, 255, 255, 0.8)', padding: 20, font: { family: 'Inter' } }
-                    }
-                },
-                maintainAspectRatio: false
-            }
-        });
-    });
-</script>
 {% endblock %}

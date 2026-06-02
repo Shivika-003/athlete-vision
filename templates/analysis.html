@@ -1,7 +1,277 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+{% macro render_shot_card(shot, index, section_type) %}
+<div class="shot-card shot-card-{{ section_type }}">
+    <!-- Card header/media -->
+    <div class="shot-thumb-container">
+        {% if shot.video_filename %}
+        <video id="shot-video-{{ section_type }}-{{ index }}" class="shot-video" preload="metadata" muted playsinline controls data-start="{{ shot.clip_start }}" data-end="{{ shot.clip_end }}">
+            <source src="{{ url_for('serve_processed_video', filename=shot.video_filename) }}#t={{ shot.clip_start }},{{ shot.clip_end }}" type="video/mp4">
+        </video>
+        {% else %}
+        <div style="position: absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#1e293b; color:white;">
+            🏸 Clip Preview
+        </div>
+        {% endif %}
+        
+        <!-- Score badge -->
+        <div class="shot-score-badge score-badge-{{ section_type }}">
+            {{ shot.score }}
+        </div>
+        
+
+    </div>
+    
+    <!-- Card Info -->
+    <div class="shot-info-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+            <h5 class="shot-card-title">{{ shot.shot_type }}</h5>
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">CONF: {{ shot.confidence }}%</span>
+        </div>
+        
+        <div class="shot-metric-row">
+            <span>Elbow Angle:</span>
+            <span class="shot-metric-value">{{ shot.elbow_angle }}°</span>
+        </div>
+        <div class="shot-metric-row">
+            <span>Knee Angle:</span>
+            <span class="shot-metric-value">{{ shot.knee_angle }}°</span>
+        </div>
+        {% if shot.wrist_angle %}
+        <div class="shot-metric-row">
+            <span>Wrist Angle:</span>
+            <span class="shot-metric-value">{{ shot.wrist_angle }}°</span>
+        </div>
+        {% endif %}
+        <div class="shot-metric-row">
+            <span>Timestamp:</span>
+            <span class="shot-metric-value">{{ shot.timestamp }}</span>
+        </div>
+        
+        <div style="margin-top:0.5rem; font-size:0.8rem; font-weight:700; color:{% if shot.is_good %}#16a34a{% else %}#dc2626{% endif %};">
+            {% if shot.is_good %}✅ Good Technique{% else %}⚠️ Needs Improvement{% endif %}
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="shot-card-footer">
+        <a href="{% if shot.video_filename %}{{ url_for('serve_processed_video', filename=shot.video_filename) }}#t={{ shot.clip_start }},{{ shot.clip_end }}{% else %}#{% endif %}" target="_blank" class="shot-btn shot-btn-outline">Open clip</a>
+        <button class="shot-btn shot-btn-fill" onclick="playShotInline('shot-video-{{ section_type }}-{{ index }}')">Play inline</button>
+    </div>
+</div>
+{% endmacro %}
+
 <style>
+    /* ═══════════ SHOT ANALYSIS DASHBOARD CSS ═══════════ */
+    .shots-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+    
+    @media (max-width: 1200px) {
+        .shots-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .shots-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .shot-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        position: relative;
+    }
+    
+    .shot-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    }
+    
+    .shot-card-good {
+        border: 2.5px solid #22c55e;
+    }
+    .shot-card-good:hover {
+        border-color: #16a34a;
+    }
+    
+    .shot-card-improvement {
+        border: 2.5px solid #ef4444;
+    }
+    .shot-card-improvement:hover {
+        border-color: #dc2626;
+    }
+    
+    .shot-thumb-container {
+        position: relative;
+        width: 100%;
+        padding-top: 75%; /* 4:3 Aspect Ratio - tall display */
+        background: #000;
+        overflow: hidden;
+    }
+    
+    .shot-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .shot-score-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.85rem;
+        color: white;
+        z-index: 10;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    
+    .score-badge-good {
+        background: #ef4444;
+        background: #d97706; /* Orange/Red fallback for lower scores in good shots or customizable */
+    }
+    
+    .score-badge-good {
+        background: #22c55e;
+    }
+    
+    .score-badge-improvement {
+        background: #dc2626;
+    }
+    
+
+    
+    .shot-preview-overlay {
+        position: absolute;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text-main);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        border: 1px solid rgba(0,0,0,0.08);
+        transition: all 0.2s;
+    }
+    
+    .shot-preview-overlay:hover {
+        background: white;
+        transform: translateX(-50%) scale(1.05);
+    }
+    
+    .shot-info-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex-grow: 1;
+        transition: background-color 0.3s ease;
+    }
+    
+    .shot-card-good .shot-info-body {
+        background: rgba(34, 197, 94, 0.04);
+    }
+    
+    .shot-card-improvement .shot-info-body {
+        background: rgba(239, 68, 68, 0.04);
+    }
+    
+    .shot-card-title {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin: 0;
+    }
+    
+    .shot-metric-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+        padding: 2px 0;
+        border-bottom: 1px dashed rgba(22, 163, 74, 0.05);
+    }
+    
+    .shot-metric-value {
+        color: var(--text-main);
+        font-weight: 700;
+    }
+    
+    .shot-card-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid rgba(0,0,0,0.04);
+        display: flex;
+        gap: 0.75rem;
+    }
+    
+    .shot-card-good .shot-card-footer {
+        background: rgba(34, 197, 94, 0.02);
+    }
+    
+    .shot-card-improvement .shot-card-footer {
+        background: rgba(239, 68, 68, 0.02);
+    }
+    
+    .shot-btn {
+        flex: 1;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .shot-btn-outline {
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: #f8fafc;
+        color: var(--text-muted);
+    }
+    .shot-btn-outline:hover {
+        background: #f1f5f9;
+        color: var(--text-main);
+    }
+    
+    .shot-btn-fill {
+        background: #16a34a;
+        color: white;
+        border: none;
+    }
+    .shot-btn-fill:hover {
+        background: #15803d;
+        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+    }
+
     @keyframes countUp {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -42,7 +312,7 @@
     .angle-bar-track {
         flex: 1;
         height: 10px;
-        background: rgba(255,255,255,0.08);
+        background: rgba(22, 163, 74, 0.06);
         border-radius: 5px;
         overflow: hidden;
     }
@@ -58,42 +328,44 @@
         font-size: 0.9rem;
     }
     .analysis-metric-card {
-        background: linear-gradient(135deg, rgba(30, 58, 95, 0.5), rgba(22, 45, 74, 0.7));
-        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.1);
         border-radius: 16px;
         padding: 1.5rem;
         text-align: center;
         transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     .analysis-metric-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+        box-shadow: 0 12px 24px rgba(22, 163, 74, 0.08);
     }
     .feedback-card {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(30, 58, 95, 0.4));
+        background: rgba(248, 250, 252, 0.9);
         border-left: 4px solid;
         border-radius: 0 14px 14px 0;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1rem;
         transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
     }
     .feedback-card:hover {
         transform: translateX(4px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
-    .feedback-card.card-issue { border-color: #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(30, 20, 20, 0.5)); }
-    .feedback-card.card-issue:hover { box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15); }
-    .feedback-card.card-fix { border-color: #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(40, 30, 10, 0.5)); }
-    .feedback-card.card-fix:hover { box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15); }
-    .feedback-card.card-why { border-color: #a78bfa; background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(30, 20, 50, 0.5)); }
-    .feedback-card.card-why:hover { box-shadow: 0 8px 24px rgba(167, 139, 250, 0.15); }
-    .feedback-card.card-drill { border-color: #4ade80; background: linear-gradient(135deg, rgba(74, 222, 128, 0.12), rgba(15, 40, 20, 0.5)); }
-    .feedback-card.card-drill:hover { box-shadow: 0 8px 24px rgba(74, 222, 128, 0.15); }
-    .feedback-card.card-cue { border-color: #ec4899; background: linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(40, 15, 30, 0.5)); }
-    .feedback-card.card-cue:hover { box-shadow: 0 8px 24px rgba(236, 72, 153, 0.15); }
-    .feedback-card.card-checkpoint { border-color: #22d3ee; background: linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(10, 30, 40, 0.5)); }
-    .feedback-card.card-checkpoint:hover { box-shadow: 0 8px 24px rgba(34, 211, 238, 0.15); }
-    .feedback-card.card-default { border-color: #64748b; }
+    .feedback-card.card-issue { border-color: #ef4444; background: rgba(239, 68, 68, 0.04); }
+    .feedback-card.card-issue:hover { box-shadow: 0 8px 24px rgba(239, 68, 68, 0.1); }
+    .feedback-card.card-fix { border-color: #f59e0b; background: rgba(245, 158, 11, 0.04); }
+    .feedback-card.card-fix:hover { box-shadow: 0 8px 24px rgba(245, 158, 11, 0.1); }
+    .feedback-card.card-why { border-color: #a78bfa; background: rgba(167, 139, 250, 0.04); }
+    .feedback-card.card-why:hover { box-shadow: 0 8px 24px rgba(167, 139, 250, 0.1); }
+    .feedback-card.card-drill { border-color: #16a34a; background: rgba(22, 163, 74, 0.04); }
+    .feedback-card.card-drill:hover { box-shadow: 0 8px 24px rgba(22, 163, 74, 0.1); }
+    .feedback-card.card-cue { border-color: #ec4899; background: rgba(236, 72, 153, 0.04); }
+    .feedback-card.card-cue:hover { box-shadow: 0 8px 24px rgba(236, 72, 153, 0.1); }
+    .feedback-card.card-checkpoint { border-color: #0d9488; background: rgba(13, 148, 136, 0.04); }
+    .feedback-card.card-checkpoint:hover { box-shadow: 0 8px 24px rgba(13, 148, 136, 0.1); }
+    .feedback-card.card-default { border-color: #94a3b8; background: rgba(148, 163, 184, 0.04); }
     .feedback-icon {
         display: inline-flex;
         align-items: center;
@@ -114,11 +386,268 @@
     }
     .snapshot-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
+        width: 100%;
     }
     @media (max-width: 768px) {
         .snapshot-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ═══════════ SHADOW DASHBOARD UI STYLE OVERRIDES ═══════════ */
+    .shadow-dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    }
+    .shadow-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(22, 163, 74, 0.1);
+        padding-bottom: 0.75rem;
+    }
+    .shadow-header-left {
+        color: #64748b;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    .shadow-header-right {
+        color: #16a34a;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }
+    .shadow-cards-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+    @media (max-width: 640px) {
+        .shadow-cards-row {
+            grid-template-columns: 1fr;
+        }
+    }
+    .shadow-card {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.1);
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .shadow-card-label {
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .shadow-card-value {
+        font-size: 2.3rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+    .shadow-card-sub {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+    .shadow-body-grid {
+        display: grid;
+        grid-template-columns: 2.2fr 1fr;
+        gap: 1.5rem;
+    }
+    @media (max-width: 820px) {
+        .shadow-body-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .shadow-breakdown-card {
+        background: rgba(248, 250, 252, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.08);
+        border-radius: 14px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .shadow-breakdown-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1.25rem;
+        letter-spacing: 0.02em;
+    }
+    .shadow-breakdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .shadow-row {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.06);
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    .shadow-row:hover {
+        transform: translateX(3px);
+        background: rgba(22, 163, 74, 0.03);
+    }
+    .shadow-row-label-group {
+        width: 110px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+    }
+    .shadow-row-name {
+        font-weight: 800;
+        font-size: 0.98rem;
+        color: #1e293b;
+    }
+    .shadow-row-count {
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 700;
+    }
+    .shadow-row-track {
+        flex-grow: 1;
+        height: 8px;
+        background: rgba(22, 163, 74, 0.06);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .shadow-row-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .shadow-row-score {
+        width: 35px;
+        text-align: right;
+        font-weight: 800;
+        font-size: 0.95rem;
+    }
+    .shadow-row-badge {
+        width: 80px;
+        text-align: center;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+    
+    /* Badges styles */
+    .badge-weak {
+        background: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+    .badge-average {
+        background: rgba(245, 158, 11, 0.08);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.15);
+    }
+    .badge-strong {
+        background: rgba(22, 163, 74, 0.08);
+        color: #16a34a;
+        border: 1px solid rgba(22, 163, 74, 0.15);
+    }
+    .badge-na {
+        background: rgba(100, 116, 139, 0.06);
+        color: #94a3b8;
+        border: 1px solid rgba(100, 116, 139, 0.1);
+    }
+    
+    /* Colors */
+    .color-weak { color: #dc2626; }
+    .color-average { color: #d97706; }
+    .color-strong { color: #16a34a; }
+    .color-na { color: #94a3b8; }
+    
+    .bg-weak { background: #ef4444; }
+    .bg-average { background: #f59e0b; }
+    .bg-strong { background: #16a34a; }
+    .bg-na { background: #cbd5e1; }
+    
+    .bg-smash { background-color: #22c55e !important; }
+    .bg-clear { background-color: #84cc16 !important; }
+    .bg-drive { background-color: #10b981 !important; }
+    .bg-drop { background-color: #3b82f6 !important; }
+    .bg-lift { background-color: #eab308 !important; }
+    .bg-net { background-color: #ef4444 !important; }
+    
+    .shadow-share-card {
+        background: rgba(248, 250, 252, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.08);
+        border-radius: 14px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .shadow-share-chart-wrapper {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        margin: 1.5rem auto;
+    }
+    .shadow-share-center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+    }
+    .shadow-share-center-num {
+        font-size: 1.9rem;
+        font-weight: 900;
+        color: #1e293b;
+    }
+    .shadow-share-center-label {
+        font-size: 0.72rem;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .shadow-share-legend {
+        width: 100%;
+        margin-top: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+    .shadow-legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.82rem;
+        color: #475569;
+        font-weight: 600;
+    }
+    .shadow-legend-left {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .shadow-legend-color-box {
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
     }
 </style>
 
@@ -127,8 +656,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h2 style="margin-bottom: 0.25rem;">
-                {% if record.shot_type == 'Match Analysis' %}
-                    🎯 Match Analysis Report
+                {% if record.shot_type in ('Match Analysis', 'Shadow Practice') %}
+                    🎯 Shadow Practice Repetitions Report
                 {% else %}
                     🏸 Biomechanical Analysis Report
                 {% endif %}
@@ -136,7 +665,7 @@
             <p style="color: var(--text-muted); font-size: 1.05rem; margin: 0; font-weight: 600;">
                 <span style="color: var(--text-main);">Athlete:</span> <span style="color: var(--accent-cyan); text-transform: capitalize;">{{ current_user.username }}</span> &nbsp;|&nbsp; 
                 <span style="color: var(--text-main);">Date:</span> {{ record.upload_date.strftime('%b %d, %Y at %I:%M %p') }}
-                {% if record.shot_type and record.shot_type != 'Match Analysis' %}
+                {% if record.shot_type and record.shot_type not in ('Match Analysis', 'Shadow Practice') %}
                 &nbsp;|&nbsp; <span style="color: var(--text-main);">Shot:</span> <span style="color: var(--accent-gold); text-transform: capitalize;">{{ record.shot_type }}</span>
                 {% endif %}
             </p>
@@ -146,15 +675,126 @@
         </div>
     </div>
 
-    {% if record.shot_type == 'Match Analysis' %}
+    {% if record.shot_type in ('Match Analysis', 'Shadow Practice') %}
     <!-- ═══════════ MATCH ANALYSIS VIEW ═══════════ -->
     <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
         <div style="display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 1000px; margin: 0 auto; align-items: stretch;">
+            
+            <!-- Shadow Practice repetition analysis header and dashboard -->
+            <div class="shadow-dashboard">
+                <div class="shadow-header">
+                    <div class="shadow-header-left">
+                        Session: {{ record.upload_date.strftime('%d %b %Y') }}
+                    </div>
+                    <div class="shadow-header-right">
+                        {{ shadow_data.total_shots }} shots detected
+                    </div>
+                </div>
+                
+                <div class="shadow-cards-row">
+                    <!-- Overall Score -->
+                    <div class="shadow-card">
+                        <span class="shadow-card-label">Overall score</span>
+                        <div style="display: flex; align-items: baseline; gap: 0.25rem;">
+                            <span class="shadow-card-value 
+                                {% if shadow_data.overall_score >= 70 %}color-strong
+                                {% elif shadow_data.overall_score >= 50 %}color-average
+                                {% else %}color-weak{% endif %}">
+                                {{ shadow_data.overall_score }}
+                            </span>
+                            <span class="shadow-card-sub">/100</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Strong Shots -->
+                    <div class="shadow-card">
+                        <span class="shadow-card-label">Strong shots</span>
+                        <span class="shadow-card-value color-strong">{{ shadow_data.strong_count }}</span>
+                    </div>
+                    
+                    <!-- Needs Work -->
+                    <div class="shadow-card">
+                        <span class="shadow-card-label">Needs work</span>
+                        <span class="shadow-card-value color-weak">{{ shadow_data.needs_work_count }}</span>
+                    </div>
+                </div>
+                
+                <div class="shadow-body-grid">
+                    <!-- Shot Breakdown List -->
+                    <div class="shadow-breakdown-card">
+                        <div class="shadow-breakdown-title">Shot breakdown</div>
+                        <div class="shadow-breakdown-list">
+                            {% for shot_name in ['Smash', 'Clear', 'Drop', 'Lift', 'Drive'] %}
+                                {% set shot_info = shadow_data.breakdown.get(shot_name, {'count': 0, 'score': 0, 'rating': 'N/A'}) %}
+                                <div class="shadow-row">
+                                    <div class="shadow-row-label-group">
+                                        <span class="shadow-row-name">{{ shot_name }}</span>
+                                        <span class="shadow-row-count">x{{ shot_info.count }}</span>
+                                    </div>
+                                    <div class="shadow-row-track">
+                                        <div class="shadow-row-fill 
+                                            {% if shot_info.rating == 'Strong' %}bg-strong
+                                            {% elif shot_info.rating == 'Average' %}bg-average
+                                            {% elif shot_info.rating == 'Weak' %}bg-weak
+                                            {% else %}bg-na{% endif %}"
+                                            style="width: {{ shot_info.score }}%;"></div>
+                                    </div>
+                                    <span class="shadow-row-score 
+                                        {% if shot_info.rating == 'Strong' %}color-strong
+                                        {% elif shot_info.rating == 'Average' %}color-average
+                                        {% elif shot_info.rating == 'Weak' %}color-weak
+                                        {% else %}color-na{% endif %}">
+                                        {{ shot_info.score }}
+                                    </span>
+                                    <span class="shadow-row-badge 
+                                        {% if shot_info.rating == 'Strong' %}badge-strong
+                                        {% elif shot_info.rating == 'Average' %}badge-average
+                                        {% elif shot_info.rating == 'Weak' %}badge-weak
+                                        {% else %}badge-na{% endif %}">
+                                        {{ shot_info.rating }}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Shot Share Card -->
+                    <div class="shadow-share-card">
+                        <div class="shadow-breakdown-title" style="margin-bottom: 0;">Shot share</div>
+                        
+                        <div class="shadow-share-chart-wrapper">
+                            <canvas id="shadowShareChart"></canvas>
+                            <div class="shadow-share-center-text">
+                                <span class="shadow-share-center-num">{{ shadow_data.total_shots }}</span>
+                                <span class="shadow-share-center-label">shots</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Legend -->
+                        <div class="shadow-share-legend">
+                            {% for shot_name in ['Smash', 'Clear', 'Drive', 'Drop', 'Lift'] %}
+                                {% set shot_info = shadow_data.breakdown.get(shot_name, {'count': 0, 'score': 0}) %}
+                                {% if shot_info.count > 0 %}
+                                    {% set pct = (shot_info.count / shadow_data.total_shots * 100)|round|int %}
+                                    <div class="shadow-legend-item">
+                                        <div class="shadow-legend-left">
+                                            <div class="shadow-legend-color-box bg-{{ shot_name|lower }}"></div>
+                                            <span>{{ shot_name }}</span>
+                                        </div>
+                                        <span>{{ pct }}%</span>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div style="text-align: center; display: flex; flex-direction: column; height: 100%;">
-                <h3 style="font-size: 1.6rem; margin-bottom: 1rem; color: var(--text-main);">Tactical Match Analysis</h3>
+                <h3 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main);">📹 Processed Practice Video</h3>
                 <div style="position: relative; width: 100%; flex-grow: 1; display: flex; align-items: center;">
                     {% if record.processed_video_path %}
-                    <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);">
+                    <video controls playsinline loop style="max-height: 580px; width: 100%; max-width: 950px; border-radius: 12px; background: #000; border: 2px solid rgba(0, 212, 255, 0.3); box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1); display: block; margin: 0 auto; object-fit: contain;">
                         <source src="{{ url_for('serve_processed_video', filename=record.processed_video_path) }}" type="video/mp4">
                     </video>
                     {% else %}
@@ -166,29 +806,245 @@
                 </div>
                 
                 <!-- AI Info Box -->
-                <div style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(0, 212, 255, 0.05); border: 1px solid rgba(0, 212, 255, 0.15); border-radius: 12px; text-align: left;">
+                <div style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(244, 114, 182, 0.05); border: 1px solid rgba(244, 114, 182, 0.15); border-radius: 12px; text-align: left;">
                     <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
-                        <strong style="color: var(--accent-cyan); font-size: 1.1rem;">🎯 Vision Tracking Enabled</strong><br>
-                        <span style="color: #4ade80;">🟢 Green Box</span> — Tracked Player (Near court) with zoomed Analysis Panel &nbsp;&nbsp;<br>
-                        The stats overlay shows real-time shot classification, grip detection, balance tracking, and real-world speed analysis (km/h).
+                        <strong style="color: var(--accent-pink); font-size: 1.1rem;">🎯 Biomechanical Repetition Tracker</strong><br>
+                        <span style="color: #4ade80;">🟢 Neon Green Box</span> — Bounding box tracking player movements dynamically.<br>
+                        The HUD overlay displays real-time stroke classification, grip detection, balance/stance tracking, speed analysis (km/h), and the **cumulative repetition counts** for all stroke types.
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ═══════════ SHADOW FEEDBACK SECTION ═══════════ -->
+    {% if shadow_data and shadow_data.shadow_feedback %}
+    {% set sf = shadow_data.shadow_feedback %}
+    <div class="card animate-fade-in-up" style="margin-top: 2rem; padding: 2.5rem; border-radius: 16px;">
+        
+        <!-- Worst Moments Grid -->
+        {% if sf.worst_moments %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+            {% for wm in sf.worst_moments %}
+            <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.12); border-radius: 12px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.02);">
+                <p style="font-size: 1.3rem; font-weight: 800; color: #dc2626; margin: 0 0 0.25rem 0;">{{ wm.timestamp }}</p>
+                <p style="font-size: 0.9rem; font-weight: 700; color: #7f1d1d; margin: 0;">{{ wm.label }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600; margin: 0 0 2.5rem 0; text-align: center;">
+            {{ sf.summary_text }}
+        </p>
+        <hr style="border: none; border-top: 1px solid rgba(22, 163, 74, 0.08); margin-bottom: 2rem;">
+        {% endif %}
+
+        <!-- What the body is doing wrong -->
+        {% if sf.wrong_actions %}
+        <div style="margin-bottom: 2.5rem;">
+            <h4 style="color: #dc2626; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 1.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                ⚠️ WHAT THE BODY IS DOING WRONG
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for item in sf.wrong_actions %}
+                <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.1); border-radius: 99px; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.75rem; text-align: left;">
+                    <span style="color: #dc2626; font-size: 1.1rem; flex-shrink: 0;">🛑</span>
+                    <span style="color: #7f1d1d; font-weight: 600; font-size: 0.95rem;">{{ item }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <hr style="border: none; border-top: 1px solid rgba(22, 163, 74, 0.08); margin-bottom: 2rem;">
+        {% endif %}
+
+        <!-- Drill to fix it this week -->
+        {% if sf.drill_steps %}
+        <div>
+            <h4 style="color: #16a34a; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                🔄 DRILL TO FIX IT THIS WEEK
+            </h4>
+            <h3 style="font-size: 1.35rem; font-weight: 800; color: #1e293b; margin: 0 0 1.25rem 0; text-align: left;">{{ sf.drill_title }}</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for step in sf.drill_steps %}
+                <div style="background: rgba(22, 163, 74, 0.04); border: 1px solid rgba(22, 163, 74, 0.1); border-radius: 99px; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 1rem; text-align: left;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; flex-shrink: 0;">
+                        {{ loop.index }}
+                    </div>
+                    <span style="color: #14532d; font-weight: 600; font-size: 0.95rem;">{{ step }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
     {% else %}
     <!-- ═══════════ SINGLE PLAYER ANALYSIS VIEW ═══════════ -->
 
     {% if record.status == 'processing' %}
     <!-- Processing State -->
-    <div class="card animate-fade-in-up" style="text-align: center; padding: 4rem 2rem;">
-        <div style="font-size: 3rem; margin-bottom: 1rem; animation: pulse 2s infinite;">⚙️</div>
-        <h3 style="color: var(--accent-cyan); margin-bottom: 0.5rem;">Analyzing Your Video...</h3>
-        <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">Detecting your pose, measuring joint angles, classifying shots, and comparing to the pro benchmark. This usually takes 15-45 seconds.</p>
-        <script>setTimeout(function() { window.location.reload(); }, 6000);</script>
+    <div class="card animate-fade-in-up" style="max-width: 650px; margin: 2rem auto; padding: 3rem 2.5rem; text-align: center; border-radius: 20px;">
+        <!-- Racket Icon -->
+        <div style="font-size: 3.5rem; margin-bottom: 1.5rem; line-height: 1;">🏸</div>
+        
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; text-transform: uppercase; margin-bottom: 0.5rem;">Analysing Your Session</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">AI is processing your footage...</p>
+        
+        <!-- Progress Bar -->
+        <div style="width: 100%; background: #e2e8f0; height: 12px; border-radius: 99px; overflow: hidden; margin-bottom: 0.5rem; position: relative;">
+            <div id="loader-progress-bar" style="width: 15%; height: 100%; background: #16a34a; border-radius: 99px; transition: width 0.4s ease;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 2.5rem;">
+            <span id="loader-percent">15% complete</span>
+            <span id="loader-steps">0/4 steps</span>
+        </div>
+        
+        <!-- Checklist Steps -->
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Step 1 -->
+            <div id="step-card-1" class="loading-step-card">
+                <div class="loading-step-info">
+                    <div class="loading-step-icon" id="step-icon-1">1</div>
+                    <div>
+                        <p class="loading-step-title" style="margin:0;">POSE DETECTION</p>
+                        <p class="loading-step-desc" style="margin:0;">MediaPipe skeleton overlay</p>
+                    </div>
+                </div>
+                <span id="step-check-1" style="display: none; color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step-card-2" class="loading-step-card">
+                <div class="loading-step-info">
+                    <div class="loading-step-icon" id="step-icon-2">2</div>
+                    <div>
+                        <p class="loading-step-title" style="margin:0;">SHOT CLASSIFICATION</p>
+                        <p class="loading-step-desc" style="margin:0;">Smash, Clear, Drop, Lift, Drive, Net Shot</p>
+                    </div>
+                </div>
+                <span id="step-check-2" style="display: none; color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="step-card-3" class="loading-step-card">
+                <div class="loading-step-info">
+                    <div class="loading-step-icon" id="step-icon-3">3</div>
+                    <div>
+                        <p class="loading-step-title" style="margin:0;">SWING VELOCITY</p>
+                        <p class="loading-step-desc" style="margin:0;">Estimating racket speed per shot</p>
+                    </div>
+                </div>
+                <span id="step-check-3" style="display: none; color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span>
+            </div>
+
+            <!-- Step 4 -->
+            <div id="step-card-4" class="loading-step-card">
+                <div class="loading-step-info">
+                    <div class="loading-step-icon" id="step-icon-4">4</div>
+                    <div>
+                        <p class="loading-step-title" style="margin:0;">BALANCE & FOOTWORK</p>
+                        <p class="loading-step-desc" style="margin:0;">Scoring stability and movement</p>
+                    </div>
+                </div>
+                <span id="step-check-4" style="display: none; color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span>
+            </div>
+        </div>
     </div>
-    
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const recordId = "{{ record.id }}";
+            const storageKey = `analysis_elapsed_${recordId}`;
+            let elapsed = parseInt(sessionStorage.getItem(storageKey) || "0");
+            
+            function updateLoader() {
+                const bar = document.getElementById('loader-progress-bar');
+                const percentText = document.getElementById('loader-percent');
+                const stepsText = document.getElementById('loader-steps');
+                
+                let percent = 15;
+                
+                // Reset step cards styling
+                for (let i = 1; i <= 4; i++) {
+                    const card = document.getElementById(`step-card-${i}`);
+                    const icon = document.getElementById(`step-icon-${i}`);
+                    const check = document.getElementById(`step-check-${i}`);
+                    
+                    card.className = "loading-step-card";
+                    icon.innerHTML = i;
+                    check.style.display = "none";
+                }
+                
+                if (elapsed >= 12) {
+                    percent = 95;
+                    for (let i = 1; i <= 4; i++) {
+                        markCompleted(i);
+                    }
+                    stepsText.innerText = "4/4 steps";
+                } else if (elapsed >= 9) {
+                    percent = 81;
+                    markCompleted(1);
+                    markCompleted(2);
+                    markCompleted(3);
+                    markActive(4);
+                    stepsText.innerText = "3/4 steps";
+                } else if (elapsed >= 6) {
+                    percent = 55;
+                    markCompleted(1);
+                    markCompleted(2);
+                    markActive(3);
+                    stepsText.innerText = "2/4 steps";
+                } else if (elapsed >= 3) {
+                    percent = 30;
+                    markCompleted(1);
+                    markActive(2);
+                    stepsText.innerText = "1/4 steps";
+                } else {
+                    percent = 15;
+                    markActive(1);
+                    stepsText.innerText = "0/4 steps";
+                }
+                
+                bar.style.width = percent + "%";
+                percentText.innerText = percent + "% complete";
+            }
+            
+            function markCompleted(stepNum) {
+                const card = document.getElementById(`step-card-${stepNum}`);
+                const icon = document.getElementById(`step-icon-${stepNum}`);
+                const check = document.getElementById(`step-check-${stepNum}`);
+                
+                card.classList.add('completed');
+                icon.innerHTML = "✓";
+                check.style.display = "block";
+            }
+            
+            function markActive(stepNum) {
+                const card = document.getElementById(`step-card-${stepNum}`);
+                const icon = document.getElementById(`step-icon-${stepNum}`);
+                
+                card.classList.add('active');
+                icon.innerHTML = "";
+            }
+            
+            // Initial render
+            updateLoader();
+            
+            // Increment timer and save
+            const interval = setInterval(function() {
+                elapsed += 1;
+                sessionStorage.setItem(storageKey, elapsed);
+                updateLoader();
+                
+                if (elapsed % 6 === 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        });
+    </script>
     {% elif record.status == 'failed' %}
     <div class="card" style="text-align: center; padding: 3rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
@@ -204,14 +1060,14 @@
         <div class="analysis-metric-card" style="grid-column: span 1;">
             <div class="score-ring" style="margin: 0 auto 0.75rem;">
                 <svg viewBox="0 0 140 140">
-                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(22, 163, 74, 0.08)" stroke-width="10"/>
                     <circle cx="70" cy="70" r="60" fill="none" 
-                        stroke="{% if record.performance_score and record.performance_score >= 70 %}#4ade80{% elif record.performance_score and record.performance_score >= 40 %}#fbbf24{% else %}#f87171{% endif %}" 
+                        stroke="{% if record.performance_score and record.performance_score >= 70 %}#16a34a{% elif record.performance_score and record.performance_score >= 40 %}#d97706{% else %}#dc2626{% endif %}" 
                         stroke-width="10" stroke-linecap="round"
                         stroke-dasharray="{{ (record.performance_score or 0) * 3.77 }} 377"
                         style="transition: stroke-dasharray 2s ease;"/>
                 </svg>
-                <span class="score-value" style="color: {% if record.performance_score and record.performance_score >= 70 %}#4ade80{% elif record.performance_score and record.performance_score >= 40 %}#fbbf24{% else %}#f87171{% endif %};">
+                <span class="score-value" style="color: {% if record.performance_score and record.performance_score >= 70 %}#16a34a{% elif record.performance_score and record.performance_score >= 40 %}#d97706{% else %}#dc2626{% endif %};">
                     {{ "%.0f"|format(record.performance_score or 0) }}
                 </span>
             </div>
@@ -222,14 +1078,14 @@
         <div class="analysis-metric-card">
             <div class="score-ring" style="margin: 0 auto 0.75rem;">
                 <svg viewBox="0 0 140 140">
-                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
-                    <circle cx="70" cy="70" r="60" fill="none" stroke="#00d4ff" stroke-width="10" stroke-linecap="round"
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(22, 163, 74, 0.08)" stroke-width="10"/>
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="#0ea5e9" stroke-width="10" stroke-linecap="round"
                         stroke-dasharray="{{ (record.similarity_score or 0) * 3.77 }} 377"
                         style="transition: stroke-dasharray 2s ease;"/>
                 </svg>
-                <span class="score-value" style="color: #00d4ff;">{{ "%.0f"|format(record.similarity_score or 0) }}</span>
+                <span class="score-value" style="color: #0ea5e9;">{{ "%.0f"|format(record.similarity_score or 0) }}</span>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">PRO SIMILARITY</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">TECHNIQUE ACCURACY</p>
         </div>
 
         <!-- Arm Score -->
@@ -255,9 +1111,9 @@
 
         <!-- Smash Speed Radar (New Feature) -->
         {% if record.smash_speed_kmh and record.smash_speed_kmh > 0 %}
-        <div class="analysis-metric-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(30, 58, 95, 0.7)); border-color: rgba(239, 68, 68, 0.3);">
+        <div class="analysis-metric-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.04), rgba(239, 68, 68, 0.08)); border-color: rgba(239, 68, 68, 0.15);">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: #f87171;">{{ "%.0f"|format(record.smash_speed_kmh) }} <span style="font-size: 0.9rem; font-weight: 600;">km/h</span></div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #dc2626;">{{ "%.0f"|format(record.smash_speed_kmh) }} <span style="font-size: 0.9rem; font-weight: 600;">km/h</span></div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">SHUTTLE SPEED</p>
         </div>
         {% endif %}
@@ -319,7 +1175,7 @@
         <!-- ORIGINAL VIDEO -->
         <div class="card animate-fade-in-up" style="margin-bottom: 0;">
             <h3 style="margin-bottom: 1rem; color: var(--accent-pink); font-size: 1.3rem;">📹 Original Uploaded Video</h3>
-            <video controls loop muted playsinline style="width: 100%; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block;">
+            <video controls loop muted playsinline style="max-height: 480px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
             </video>
@@ -329,44 +1185,73 @@
 
 
 
-    <!-- ═══════════ PROCESSED VIDEO REELS (Best & Worst) ═══════════ -->
-    {% if record.processed_video_path %}
-    {% set vid_parts = record.processed_video_path.split('|') %}
-    <div class="card animate-fade-in-up" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; color: var(--text-main); text-align: center;">🎬 Highlight Reels <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(Cinematic View)</span></h3>
-        <div style="display: flex; flex-direction: column; gap: 2.5rem; max-width: 900px; margin: 0 auto;">
-            {% if vid_parts|length >= 1 and vid_parts[0] %}
-            <div>
-                <p style="color: #4ade80; font-weight: 700; margin-bottom: 0.75rem; text-align: center;">✅ Best Shots Reel</p>
-                <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(34, 197, 94, 0.3);">
-                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[0]) }}" type="video/mp4">
-                </video>
+    <!-- ═══════════ PROCESSED VIDEO SHOT ANALYSIS DASHBOARD ═══════════ -->
+    {% if record.processed_video_path and summary_stats %}
+    <div class="card animate-fade-in-up" style="margin-bottom: 2rem; border: 1.5px solid rgba(22, 163, 74, 0.15); background: var(--bg-dark);">
+        <h3 style="margin-bottom: 1.5rem; color: var(--text-main); font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            🎯 Shot Analysis
+        </h3>
+
+        <!-- 1. SUMMARY PANEL -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+            <!-- Total Shots -->
+            <div style="background: rgba(22, 163, 74, 0.03); border: 1.5px solid rgba(22, 163, 74, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Total Shots</p>
+                <p style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.1;">{{ summary_stats.total_shots }}</p>
             </div>
-            {% endif %}
-            {% if vid_parts|length >= 2 and vid_parts[1] %}
-            <div>
-                <p style="color: #f87171; font-weight: 700; margin-bottom: 0.75rem; text-align: center;">⚠️ Improvement Reel</p>
-                <video controls playsinline loop style="width: 100%; border-radius: 12px; background: #000; border: 2px solid rgba(239, 68, 68, 0.3);">
-                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[1]) }}" type="video/mp4">
-                </video>
+            <!-- Average Score -->
+            <div style="background: rgba(22, 163, 74, 0.03); border: 1.5px solid rgba(22, 163, 74, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Average Score</p>
+                <p style="font-size: 2.2rem; font-weight: 800; color: {% if summary_stats.avg_score >= 70 %}#16a34a{% elif summary_stats.avg_score >= 50 %}#d97706{% else %}#dc2626{% endif %}; margin: 0; line-height: 1.1;">{{ summary_stats.avg_score }}</p>
             </div>
-            {% endif %}
-        </div>
-        
-        {% if vid_parts|length >= 3 and vid_parts[2] %}
-        <div style="margin-top: 2rem; text-align: center;">
-            <button type="button" onclick="var v=document.getElementById('fullAnnotatedVid'); v.style.display = v.style.display === 'none' ? 'block' : 'none'; this.textContent = v.style.display === 'none' ? '▶ Show Full Annotated Video' : '▲ Hide Full Video';" 
-                    style="background: rgba(77, 166, 255, 0.1); border: 1px solid rgba(77, 166, 255, 0.3); color: #4da6ff; padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.3s;"
-                    onmouseover="this.style.background='rgba(77, 166, 255, 0.2)'" onmouseout="this.style.background='rgba(77, 166, 255, 0.1)'">
-                ▶ Show Full Annotated Video
-            </button>
-            <div id="fullAnnotatedVid" style="display: none; margin-top: 1.5rem;">
-                <video controls playsinline loop style="width: 100%; max-width: 800px; border-radius: 12px; background: #000; border: 2px solid rgba(77, 166, 255, 0.3); display: block; margin: 0 auto; box-shadow: 0 4px 20px rgba(77, 166, 255, 0.1);">
-                    <source src="{{ url_for('serve_processed_video', filename=vid_parts[2]) }}" type="video/mp4">
-                </video>
+            <!-- Best Shot Type -->
+            <div style="background: rgba(22, 163, 74, 0.03); border: 1.5px solid rgba(22, 163, 74, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Best Shot Type</p>
+                <p style="font-size: 1.45rem; font-weight: 800; color: var(--accent-cyan); margin: 0.35rem 0 0 0; line-height: 1.1;">{{ summary_stats.best_shot_type }}</p>
+            </div>
+            <!-- Shots Needing Improvement -->
+            <div style="background: rgba(239, 68, 68, 0.03); border: 1.5px solid rgba(239, 68, 68, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Needs Work</p>
+                <p style="font-size: 2.2rem; font-weight: 800; color: #dc2626; margin: 0; line-height: 1.1;">{{ summary_stats.shots_needing_improvement }}</p>
+            </div>
+            <!-- Overall Technique Rating -->
+            <div style="background: rgba(22, 163, 74, 0.03); border: 1.5px solid rgba(22, 163, 74, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Overall Grade</p>
+                <p style="font-size: 2.2rem; font-weight: 800; color: {% if summary_stats.avg_score >= 70 %}#16a34a{% elif summary_stats.avg_score >= 50 %}#d97706{% else %}#dc2626{% endif %}; margin: 0; line-height: 1.1;">{{ summary_stats.overall_rating }}</p>
             </div>
         </div>
-        {% endif %}
+
+        <!-- 2. GOOD SHOTS SECTION -->
+        <div style="margin-bottom: 3rem;">
+            <h4 style="color: #16a34a; font-size: 1.15rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(22, 163, 74, 0.1); padding-bottom: 0.5rem;">
+                ✅ Good Shots
+            </h4>
+            {% if good_shots %}
+            <div class="shots-grid">
+                {% for shot in good_shots %}
+                    {{ render_shot_card(shot, loop.index, "good") }}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No highly rated shots detected in this session.</p>
+            {% endif %}
+        </div>
+
+        <!-- 3. NEEDS IMPROVEMENT SECTION -->
+        <div>
+            <h4 style="color: #dc2626; font-size: 1.15rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(239, 68, 68, 0.15); padding-bottom: 0.5rem;">
+                ⚠️ Needs Improvement
+            </h4>
+            {% if improvement_shots %}
+            <div class="shots-grid">
+                {% for shot in improvement_shots %}
+                    {{ render_shot_card(shot, loop.index, "improvement") }}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">All swings look solid! No critical technique faults detected.</p>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 
@@ -401,5 +1286,123 @@
         <a href="{{ url_for('dashboard') }}" class="btn" style="width: 100%; max-width: 500px; font-size: 1.2rem; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-neon-blue)); color: white; display: inline-block;">🔁 Analyze Another Video</a>
     </div>
 </div>
+
+{% if record.shot_type in ('Match Analysis', 'Shadow Practice') %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var ctx = document.getElementById('shadowShareChart').getContext('2d');
+        
+        // Define data
+        var labels = [];
+        var data = [];
+        var colors = [];
+        
+        var colorMap = {
+            'Smash': '#22c55e',
+            'Clear': '#84cc16',
+            'Drive': '#10b981',
+            'Drop': '#3b82f6',
+            'Lift': '#eab308',
+            'Net': '#ef4444'
+        };
+        
+        {% if shadow_data %}
+            {% for shot_name in ['Smash', 'Clear', 'Drive', 'Drop', 'Lift'] %}
+                {% set shot_info = shadow_data.breakdown.get(shot_name, {'count': 0}) %}
+                {% if shot_info.count > 0 %}
+                    labels.push('{{ shot_name }}');
+                    data.push({{ shot_info.count }});
+                    colors.push(colorMap['{{ shot_name }}'] || '#64748b');
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        
+        // Fallback if no shots
+        if (data.length === 0) {
+            labels.push('No Shots');
+            data.push(1);
+            colors.push('rgba(148, 163, 184, 0.1)');
+        }
+        
+        var shadowShareChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: (data[0] !== 1 || labels[0] !== 'No Shots'),
+                        callbacks: {
+                            label: function(context) {
+                                var val = context.raw;
+                                var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                var pct = Math.round((val / total) * 100);
+                                return ' ' + context.label + ': ' + val + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                },
+                cutout: '72%'
+            }
+        });
+    });
+</script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const videos = document.querySelectorAll('.shot-video');
+        videos.forEach(video => {
+            const start = parseFloat(video.getAttribute('data-start'));
+            const end = parseFloat(video.getAttribute('data-end'));
+            
+            if (isNaN(start) || isNaN(end)) return;
+            
+            // Set initial frame when metadata loads
+            video.addEventListener('loadedmetadata', () => {
+                video.currentTime = start;
+            });
+            
+            // Fallback in case loadedmetadata already fired before this listener was added
+            if (video.readyState >= 1) {
+                video.currentTime = start;
+            }
+            
+            // Enforce bounds during playback
+            video.addEventListener('timeupdate', () => {
+                if (video.currentTime >= end) {
+                    video.pause();
+                    video.currentTime = start; // Reset to start frame
+                }
+                // Don't let users drag timeline backward past start
+                if (video.currentTime < start - 0.2) {
+                    video.currentTime = start;
+                }
+            });
+        });
+    });
+
+    function playShotInline(videoId) {
+        const video = document.getElementById(videoId);
+        if (!video) return;
+        const start = parseFloat(video.getAttribute('data-start'));
+        
+        video.currentTime = start;
+        video.muted = false; // unmute so the user can hear the shuttle sound
+        video.play();
+    }
+</script>
 
 {% endblock %}

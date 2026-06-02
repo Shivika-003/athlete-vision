@@ -63,7 +63,7 @@
                     <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-weight: 600;">Play Style</label>
                     <select name="play_style" style="width: 100%; padding: 0.75rem; border-radius: 8px;">
                         <option value="" {% if not user.play_style %}selected{% endif %}>Select Play Style...</option>
-                        <option value="Aggressive Attacker" {% if user.play_style == "Aggressive Attacker" %}selected{% endif %}>Aggressive Attacker (Smash & Net)</option>
+                        <option value="Aggressive Attacker" {% if user.play_style == "Aggressive Attacker" %}selected{% endif %}>Aggressive Attacker (Smash & Clear)</option>
                         <option value="Defensive Retriever" {% if user.play_style == "Defensive Retriever" %}selected{% endif %}>Defensive Retriever (Stamina & Placement)</option>
                         <option value="Counter Attacker" {% if user.play_style == "Counter Attacker" %}selected{% endif %}>Counter Attacker (Patience & Speed)</option>
                         <option value="All-Rounder" {% if user.play_style == "All-Rounder" %}selected{% endif %}>All-Rounder</option>

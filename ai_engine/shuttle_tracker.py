@@ -48,6 +48,9 @@ def estimate_smash_speed(video_path, contact_frame_idx, fps, player_bbox_h, wris
     
     # Define a Search Region of Interest (ROI)
     # The shuttle will shoot out from the wrist. We only search in the forward direction.
+    if not wrist_pos_px:
+        return 0
+        
     wx, wy = wrist_pos_px
     search_radius = int(width * 0.4) # Search up to 40% of screen width away
     
@@ -97,35 +100,46 @@ def estimate_smash_speed(video_path, contact_frame_idx, fps, player_bbox_h, wris
         if best_contour:
             shuttle_positions.append(best_contour)
             
-    if len(shuttle_positions) < 2:
-        # Fallback: Optical flow failed to isolate the shuttle blur due to motion blur or low contrast.
-        # We can estimate the Smash Speed using the biomechanical Kinetic Chain (Wrist Speed).
-        # A fast wrist snap directly correlates to a fast shuttle.
+    # Filter out static tracking noise by falling back to wrist velocity if speed is impossibly slow (<15 km/h)
+    use_fallback = len(shuttle_positions) < 2
+    speed_km_h = 0
+    
+    if not use_fallback:
+        start_x, start_y = shuttle_positions[0]
+        end_x, end_y = shuttle_positions[-1]
+        
+        total_px_dist = math.hypot(end_x - start_x, end_y - start_y)
+        total_meters_dist = total_px_dist / pixels_per_meter
+        
+        frames_passed = len(shuttle_positions)
+        time_seconds = frames_passed / fps
+        
+        if time_seconds > 0:
+            speed_m_s = total_meters_dist / time_seconds
+            speed_km_h = speed_m_s * 3.6
+            if speed_km_h < 15.0:
+                print(f"[ShuttleTracker] Rejecting low tracked speed {speed_km_h:.1f} km/h (potential static noise/jitter). Falling back to wrist kinetics.")
+                use_fallback = True
+        else:
+            use_fallback = True
+            
+    if use_fallback:
+        # Fallback: Optical flow failed to isolate the shuttle blur due to motion blur or low contrast,
+        # or the tracked points represent static/jitter noise.
+        # We estimate using the biomechanical Kinetic Chain (Wrist Speed).
         if max_wrist_vel > 0:
+            # If max_wrist_vel is normalized (fractional coordinates), scale to pixels using the height of the frame.
+            max_wrist_vel_px = max_wrist_vel * height if max_wrist_vel < 1.0 else max_wrist_vel
             # wrist_vel is in pixels/frame. Convert to pixels/sec -> meters/sec -> km/h
-            wrist_speed_ms = (max_wrist_vel * fps) / pixels_per_meter
+            wrist_speed_ms = (max_wrist_vel_px * fps) / pixels_per_meter
             # Shuttle usually travels ~3-5x faster than the wrist at impact due to the whip effect
             fallback_kmh = (wrist_speed_ms * 3.5) * 3.6 
+            print(f"[ShuttleTracker] Fallback speed calculated from wrist kinetics: {fallback_kmh:.1f} km/h (max_wrist_vel_px={max_wrist_vel_px:.1f})")
             return round(min(fallback_kmh, 350))
         return 0
         
-    # Calculate physical speed based on the first and last tracked point
-    start_x, start_y = shuttle_positions[0]
-    end_x, end_y = shuttle_positions[-1]
-    
-    total_px_dist = math.hypot(end_x - start_x, end_y - start_y)
-    total_meters_dist = total_px_dist / pixels_per_meter
-    
-    frames_passed = len(shuttle_positions)
-    time_seconds = frames_passed / fps
-    
-    if time_seconds <= 0: return 0
-    
-    speed_m_s = total_meters_dist / time_seconds
-    speed_km_h = speed_m_s * 3.6
-    
     # Sanity cap: badminton smashes max out around 400-500 km/h in laboratory conditions,
     # but amateur speeds are usually 100-250 km/h.
     speed_km_h = min(speed_km_h, 350)
-    
+    print(f"[ShuttleTracker] Final tracked speed: {speed_km_h:.1f} km/h (tracked over {len(shuttle_positions)} frames)")
     return round(speed_km_h)
