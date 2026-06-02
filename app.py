@@ -51,6 +51,16 @@ def load_user(user_id):
 with app.app_context():
     db.create_all()
     
+    # Dynamic migration: check if subscription_tier column exists in user table
+    try:
+        from sqlalchemy import text
+        db.session.execute(text("SELECT subscription_tier FROM user LIMIT 1"))
+    except Exception:
+        db.session.rollback()
+        print("[Startup] Adding 'subscription_tier' column to 'user' table...")
+        db.session.execute(text("ALTER TABLE user ADD COLUMN subscription_tier VARCHAR(50) DEFAULT 'Free'"))
+        db.session.commit()
+    
     # Auto-reset stuck 'processing' records from previous crashes
     stuck = VideoRecord.query.filter_by(status='processing').all()
     if stuck:
@@ -209,6 +219,18 @@ def profile():
     return render_template('profile.html', user=current_user, 
                            total_sessions=total_sessions, best_score=best_score,
                            avg_similarity=avg_sim, streak=streak)
+
+
+@app.route('/upgrade_plan', methods=['GET', 'POST'])
+@login_required
+def upgrade_plan():
+    if request.method == 'POST':
+        current_user.subscription_tier = 'Subscriber'
+        db.session.commit()
+        flash('👑 Success! Your account has been upgraded to Premium Pro Subscriber tier. All features unlocked!')
+        return redirect(url_for('profile'))
+    
+    return render_template('upgrade.html', user=current_user)
 
 
 # ═══════════════════════════════════════════════════════

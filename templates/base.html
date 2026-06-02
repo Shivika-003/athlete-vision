@@ -74,7 +74,19 @@
                         <span class="badge-desc">Upload a video for instant feedback</span>
                     </div>
                 </a>
-                <a href="{{ url_for('profile') }}" class="profile-link">👤 My Profile</a>
+                <a href="{{ url_for('profile') }}" class="profile-link" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span>👤 My Profile</span>
+                    {% if current_user.subscription_tier == 'Subscriber' %}
+                    <span style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); color: white; padding: 2px 8px; border-radius: 99px; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">👑 PRO</span>
+                    {% else %}
+                    <span style="background: #e2e8f0; color: #64748b; padding: 2px 8px; border-radius: 99px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">FREE</span>
+                    {% endif %}
+                </a>
+                {% if current_user.subscription_tier != 'Subscriber' %}
+                <a href="{{ url_for('upgrade_plan') }}" class="nav-item animate-pulse" style="background: rgba(22, 163, 74, 0.05); border: 1px dashed rgba(22, 163, 74, 0.3); color: var(--accent-cyan); text-align: center; justify-content: center; font-weight: 800; padding: 0.75rem 1rem; border-radius: 12px; text-decoration: none; margin-bottom: 0.5rem; display: flex; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    👑 UPGRADE TO PRO
+                </a>
+                {% endif %}
                 <a href="{{ url_for('logout') }}" class="logout-link">🚪 Logout</a>
             </div>
         </aside>

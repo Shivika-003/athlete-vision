@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in" style="max-width: 900px; margin: 0 auto; padding: 2rem 0;">
+    <div class="text-center" style="margin-bottom: 4rem;">
+        <div style="display: inline-block; padding: 0.4rem 1.2rem; background: rgba(22, 163, 74, 0.08); border: 1px solid rgba(22, 163, 74, 0.2); border-radius: 50px; color: var(--accent-cyan); font-weight: 700; font-size: 0.85rem; margin-bottom: 1.5rem; letter-spacing: 1.5px; text-transform: uppercase;">
+            👑 Upgrade Account
+        </div>
+        <h2 style="font-size: 3rem; font-weight: 800; color: var(--text-main); margin-bottom: 1rem; letter-spacing: -1px;">
+            Choose Your <span style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Training Tier</span>
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 600px; margin: 0 auto;">
+            Unlock advanced 3D biomechanical telemetry, smash velocity estimation, and unlimited cloud history.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start;">
+        
+        <!-- FREE TIER -->
+        <div class="card" style="padding: 3rem 2.5rem; border: 1px solid rgba(0, 0, 0, 0.06); position: relative;">
+            <h3 style="font-size: 1.8rem; font-weight: 800; color: #64748b; margin-bottom: 0.5rem;">Free Tier</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">Basic movement classification for amateur athletes.</p>
+            
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 2.5rem;">
+                $0 <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">/ forever</span>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 3rem 0;">
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem;">
+                    <span style="color: #64748b; font-size: 1.1rem;">✓</span> 3 videos analysis / month
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem;">
+                    <span style="color: #64748b; font-size: 1.1rem;">✓</span> Standard joint angle extraction
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem;">
+                    <span style="color: #64748b; font-size: 1.1rem;">✓</span> 6 shot-type classification
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: #94a3b8; font-size: 0.95rem; text-decoration: line-through; opacity: 0.7;">
+                    ✗ High-speed smash velocity calculations
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: #94a3b8; font-size: 0.95rem; text-decoration: line-through; opacity: 0.7;">
+                    ✗ 6-Part Structured AI Coaching Advisor
+                </li>
+            </ul>
+            
+            <button class="btn" style="width: 100%; padding: 1rem; font-size: 1rem; background: #64748b; box-shadow: none; cursor: default;" disabled>Current Plan</button>
+        </div>
+
+        <!-- PREMIUM PRO SUBSCRIBER TIER -->
+        <div class="card" style="padding: 3rem 2.5rem; border: 2px solid var(--accent-cyan); position: relative; box-shadow: 0 20px 40px rgba(22, 163, 74, 0.08);">
+            <!-- Popular Badge -->
+            <div style="position: absolute; top: -16px; right: 25px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); color: white; padding: 4px 14px; border-radius: 99px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);">
+                👑 Premium Pro
+            </div>
+            
+            <h3 style="font-size: 1.8rem; font-weight: 800; color: var(--accent-cyan); margin-bottom: 0.5rem;">Subscriber</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">Full biomechanical telemetry for serious competitors.</p>
+            
+            <div style="font-size: 2.5rem; font-weight: 800; color: var(--text-main); margin-bottom: 2.5rem;">
+                $19 <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">/ month</span>
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 3rem 0;">
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> Unlimited Video Uploads & Analysis
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> 3D Joint Telemetry & Pitch Estimations
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> Custom YOLO Shuttlecock Trajectory
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> High-Speed Smash Velocity Calculation
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> Full 6-Part Structured AI Coaching Advisor
+                </li>
+                <li style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; color: var(--text-main); font-size: 0.95rem; font-weight: 600;">
+                    <span style="color: var(--accent-cyan); font-size: 1.1rem; font-weight: 800;">✓</span> Priority Cloud Render (Instant Workers)
+                </li>
+            </ul>
+            
+            <form method="POST" action="{{ url_for('upgrade_plan') }}">
+                <button type="submit" class="btn" style="width: 100%; padding: 1.1rem; font-size: 1.1rem; border-radius: 50px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); text-transform: uppercase; letter-spacing: 1px; font-weight: 800;">Upgrade to Subscriber</button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

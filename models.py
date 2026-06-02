@@ -18,6 +18,9 @@ class User(UserMixin, db.Model):
     racket_brand = db.Column(db.String(100), nullable=True)
     training_goal = db.Column(db.String(200), nullable=True)
     
+    # Subscription Tier ('Free' or 'Subscriber')
+    subscription_tier = db.Column(db.String(50), default='Free', nullable=True)
+    
     # Password Reset OTP
     otp = db.Column(db.String(10), nullable=True)
     

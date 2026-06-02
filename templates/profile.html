@@ -14,7 +14,14 @@
                 {{ user.username[0]|upper if user.username else '?' }}
             </div>
             <div style="flex: 1;">
-                <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem; color: var(--text-main);">{{ user.username }}</h2>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                    <h2 style="font-size: 1.8rem; font-weight: 800; margin: 0; color: var(--text-main);">{{ user.username }}</h2>
+                    {% if user.subscription_tier == 'Subscriber' %}
+                    <span style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-gold)); color: white; padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);">👑 PREMIUM PRO</span>
+                    {% else %}
+                    <span style="background: #e2e8f0; color: #64748b; padding: 4px 12px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">FREE TIER</span>
+                    {% endif %}
+                </div>
                 <p style="color: var(--text-muted); font-size: 0.95rem;">
                     {{ user.current_level or 'Level not set' }} · {{ user.play_style or 'Play style not set' }}
                 </p>
@@ -45,6 +52,29 @@
             <p style="font-size: 2rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 0.25rem;">{{ streak }}🔥</p>
             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Streak</p>
         </div>
+    </div>
+
+    <!-- SUBSCRIPTION tier MANAGEMENT CARD -->
+    <div class="card" style="margin-bottom: 2rem; padding: 2rem; border: {% if user.subscription_tier == 'Subscriber' %}1px solid rgba(22, 163, 74, 0.35){% else %}1px solid rgba(0, 0, 0, 0.06){% endif %}; relative: overflow: hidden;">
+        {% if user.subscription_tier == 'Subscriber' %}
+        <!-- Subscriber Card -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <h3 style="color: var(--accent-cyan); font-weight: 800; font-size: 1.35rem; margin-bottom: 0.25rem;">👑 Subscriber Tier Active</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">You have unlocked the full suite of elite AI badminton biomechanics analysis, infinite history, and smash speed metrics.</p>
+            </div>
+            <span style="background: rgba(22, 163, 74, 0.08); border: 1px solid rgba(22, 163, 74, 0.25); color: var(--accent-cyan); padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">PRO MEMBER</span>
+        </div>
+        {% else %}
+        <!-- Free Tier Card -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <h3 style="color: #64748b; font-weight: 800; font-size: 1.35rem; margin-bottom: 0.25rem;">Free Tier Active</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Unlock professional telemetry, custom YOLO trajectory, and the structured AI coaching advisor.</p>
+            </div>
+            <a href="{{ url_for('upgrade_plan') }}" class="btn animate-glow" style="border-radius: 50px; font-size: 0.9rem; padding: 0.75rem 1.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Upgrade to Pro</a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- EDIT FORM -->
