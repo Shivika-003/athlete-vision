@@ -198,14 +198,25 @@ Smartphone Video Upload
 - **Preprocessing**: Dynamic low-light gamma boost (γ=1.5) for dark/nighttime videos
 - **Player Lock**: Tracks the largest (closest) player using bounding box size + horizontal position lock (tolerance = 0.25)
 
-#### B. Kalman Filter Smoothing (Superior to EMA)
+#### B. ROI-Based Complexity Reduction & Parameter Analysis
+- **Model Parameter Comparison**:
+  - **YOLOv8 Nano-Pose**: ~3.2 Million parameters. Runs extremely fast on GPU, but incurs substantial CPU load if run on full frames.
+  - **MediaPipe Pose (MobileNetV3 backbone)**: ~3.0 Million parameters. Specifically designed for edge devices and mobile browsers.
+- **Complexity Reduction via ROI Tracking**:
+  - Full-frame pose estimation requires processing the entire canvas size $W \times H$, resulting in high computational complexity $O(W \cdot H)$ per frame.
+  - MediaPipe solves this by using a two-stage **Crop-and-Track (ROI Reduction)** pipeline:
+    1. **Full-Frame Detection**: Runs a heavy face/person detector on the first frame to locate the player boundary ($O(W \cdot H)$).
+    2. **ROI Tracking**: For all subsequent frames, it constructs a localized Region of Interest (ROI) cropped bounding box around the player's last known keypoints, running the pose estimator *only* within this small crop.
+  - Under video tracking mode (`static_image_mode=False`), this reduces active computational complexity from $O(W \cdot H)$ down to $O(w_{roi} \cdot h_{roi})$, resulting in a massive boost to **Frame Rate** (FPS) on standard CPUs, while maintaining high-fidelity tracking on critical extremities like the **Hands** and **Nose**.
+
+#### C. Kalman Filter Smoothing (Superior to EMA)
 - **State Vector**: [angle, angular_velocity] per joint (2D state)
 - **Process Variance**: 0.01
 - **Measurement Variance**: 0.08
 - **Covariance Cap**: 10,000 (prevents divergence during dropout)
 - **Advantage over EMA**: Predicts motion during occlusion, handles fast wrist movements better
 
-#### C. Shot Phase Detection (State Machine)
+#### D. Shot Phase Detection (State Machine)
 ```
                     ┌──────────────────────┐
                     │       IDLE           │
@@ -236,7 +247,7 @@ Smartphone Video Upload
                     └──────────────────────┘
 ```
 
-#### D. Authoritative 12-Phase Shot Classifier (v6.0)
+#### E. Authoritative 12-Phase Shot Classifier (v6.0)
 This is the core innovation — a production-grade, unified classification pipeline:
 
 | Phase | Name | Description |
@@ -256,18 +267,23 @@ This is the core innovation — a production-grade, unified classification pipel
 
 **6 Shot Classes**: Smash, Clear, Drive, Drop, Lift, Net Shot
 
-#### E. Shuttlecock Detection
+#### F. Shuttlecock Detection
 - **Primary**: Custom-trained YOLO model (`shuttlecock_best.pt`) trained on Roboflow dataset
-- **Fallback**: Frame differencing (grayscale subtraction + contour analysis near wrist region)
+- **Fallback**: Grayscale frame differencing with **Contrast & Brightness Scaling ($\alpha, \beta$ normalization)** and contour analysis:
+  - **Dynamic Contrast & Brightness Formula**:
+    $$g(x,y) = \alpha \cdot |I_t(x,y) - I_{t+1}(x,y)| + \beta$$
+    - $\alpha = 1.5$ (Gain/Contrast scaling factor) to amplify fast-moving white shuttlecock details.
+    - $\beta = 10$ (Bias/Brightness offset) to lift dim pixels above the background noise floor.
+  - **Contour Extraction**: Applies OpenCV `cv2.findContours` on the $\alpha,\beta$-normalized binary threshold mask to accurately locate the shuttlecock's exact position while eliminating background clutter.
 - **Purpose**: Identifies exact contact frame; validates shot registration; estimates smash speed
 
-#### F. Smash Speed Estimation
+#### G. Smash Speed Estimation
 - **Primary Method**: Track shuttlecock blob across 5 post-contact frames using frame differencing
 - **Scaling**: Player bounding box height → pixels-per-meter ratio (assuming 1.75m avg player height)
 - **Fallback**: Biomechanical Kinetic Chain model (wrist velocity × 3.5 whip factor)
 - **Cap**: 350 km/h maximum (physical limit)
 
-#### G. Scoring Formulas
+#### H. Scoring Formulas
 - **Per-Joint Similarity**: `similarity = max(0, 100 × (1 - |user_angle - ref_angle| / 45))`
 - **Overall Similarity**: Mean of 5 per-joint similarities
 - **MAE (Mean Absolute Error)**: Average |user - ref| across 5 joints
@@ -275,7 +291,7 @@ This is the core innovation — a production-grade, unified classification pipel
 - **Stability Score**: `max(0, 100 - (horizontal_drift_of_head_from_hips × 300))`
 - **Swing Quality**: Weighted composite of elbow angle, knee bend, wrist extension at contact
 
-#### H. Grading Scale
+#### I. Grading Scale
 
 | Similarity % | Grade |
 |:---|:---|

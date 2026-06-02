@@ -58,8 +58,14 @@ def estimate_smash_speed(video_path, contact_frame_idx, fps, player_bbox_h, wris
         # Frame differencing: isolate fast-moving objects
         diff = cv2.absdiff(frames[i], frames[i+1])
         
+        # Apply alpha (contrast gain) and beta (brightness bias) scale adjustment 
+        # to enhance the white shuttlecock contours and suppress low-contrast noise
+        alpha = 1.5  # Contrast scaling factor
+        beta = 10    # Brightness offset
+        diff_enhanced = cv2.convertScaleAbs(diff, alpha=alpha, beta=beta)
+        
         # Threshold to get bright moving spots (shuttlecock blur)
-        _, thresh = cv2.threshold(diff, 30, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(diff_enhanced, 40, 255, cv2.THRESH_BINARY)
         
         # Mask out everything outside our expected trajectory arc
         mask = np.zeros_like(thresh)
