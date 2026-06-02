@@ -5,14 +5,14 @@
 
 <div class="fade-in">
     <!-- ═══════════ PERFORMANCE HUB HEADER ═══════════ -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1.5rem;">
         <div>
-            <p style="color: #16a34a; font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">PERFORMANCE HUB</p>
+            <p style="color: #16a34a; font-weight: 700; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">PERFORMANCE HUB</p>
             <h1 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">Dashboard</h1>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Track your badminton technique over time</p>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Track your badminton technique over time and analyze practice sessions</p>
         </div>
-        <a href="#upload-section" class="btn" style="display: flex; align-items: center; gap: 0.5rem; border-radius: 12px; background: #16a34a; padding: 0.7rem 1.5rem; font-size: 0.95rem; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2);">
-            <span>+</span> New Analysis
+        <a href="#upload-section" class="btn" style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px; background: #16a34a; padding: 0.75rem 1.5rem; font-size: 0.95rem; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2); font-weight: 700;">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i> New Analysis
         </a>
     </div>
 
@@ -23,63 +23,86 @@
         {% set ns.best_score = r.performance_score %}
       {% endif %}
     {% endfor %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
         <!-- Card 1: Total Sessions -->
-        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div class="dashboard-premium-card">
             <div>
-                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Total Sessions</p>
-                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ total_sessions }}</p>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">1 completed</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.4rem 0;">Total Sessions</p>
+                <p style="font-weight: 800; font-size: 2.1rem; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1;">{{ total_sessions }}</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">Practice videos</p>
             </div>
-            <div class="stat-icon-wrapper icon-green">📹</div>
+            <div class="stat-icon-wrapper icon-green"><i data-lucide="video" style="width: 20px; height: 20px;"></i></div>
         </div>
 
-        <!-- Card 2: Avg Score -->
-        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <!-- Card 2: Average Accuracy (Progress Ring) -->
+        <div class="dashboard-premium-card">
             <div>
-                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Avg Score</p>
-                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ "%.0f"|format(avg_similarity) }}</p>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">out of 100</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.4rem 0;">Avg Accuracy</p>
+                <p style="font-weight: 800; font-size: 2.1rem; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1;">{{ "%.0f"|format(avg_similarity) }}%</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">overall rating</p>
             </div>
-            <div class="stat-icon-wrapper icon-purple">🎯</div>
+            <div class="progress-ring-container">
+                <svg class="progress-ring" width="80" height="80">
+                    <defs>
+                        <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#16a34a" />
+                            <stop offset="100%" stop-color="#0d9488" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="progress-ring-circle-bg" cx="40" cy="40" r="32"></circle>
+                    <circle class="progress-ring-circle" id="avg-acc-circle" cx="40" cy="40" r="32" style="stroke-dashoffset: {{ 226.2 - (226.2 * avg_similarity / 100) }}px;"></circle>
+                </svg>
+                <span class="progress-ring-value" style="color: #16a34a;">{{ "%.0f"|format(avg_similarity) }}%</span>
+            </div>
         </div>
 
-        <!-- Card 3: Best Score -->
-        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <!-- Card 3: Best Score (Progress Ring) -->
+        <div class="dashboard-premium-card">
             <div>
-                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Best Score</p>
-                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ "%.0f"|format(ns.best_score) }}</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.4rem 0;">Best Score</p>
+                <p style="font-weight: 800; font-size: 2.1rem; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1;">{{ "%.0f"|format(ns.best_score) }}%</p>
                 <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">personal best</p>
             </div>
-            <div class="stat-icon-wrapper icon-gold">🏆</div>
+            <div class="progress-ring-container">
+                <svg class="progress-ring" width="80" height="80">
+                    <circle class="progress-ring-circle-bg" cx="40" cy="40" r="32"></circle>
+                    <circle class="progress-ring-circle" id="best-score-circle" cx="40" cy="40" r="32" style="stroke: #0d9488; stroke-dashoffset: {{ 226.2 - (226.2 * ns.best_score / 100) }}px;"></circle>
+                </svg>
+                <span class="progress-ring-value" style="color: #0d9488;">{{ "%.0f"|format(ns.best_score) }}%</span>
+            </div>
         </div>
 
         <!-- Card 4: Day Streak -->
-        <div class="card" style="padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div class="dashboard-premium-card">
             <div>
-                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.25rem 0;">Day Streak</p>
-                <p style="font-weight: 800; font-size: 1.8rem; color: var(--text-main); margin: 0 0 0.15rem 0; line-height: 1;">{{ streak }}</p>
-                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">active days</p>
+                <p style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 0.4rem 0;">Active Streak</p>
+                <p style="font-weight: 800; font-size: 2.1rem; color: var(--text-main); margin: 0 0 0.25rem 0; line-height: 1;">{{ streak }} Days</p>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0; font-weight: 500;">consecutive training</p>
             </div>
-            <div class="stat-icon-wrapper icon-pink">🔥</div>
+            <div class="stat-icon-wrapper icon-pink"><i data-lucide="flame" style="width: 20px; height: 20px;"></i></div>
         </div>
     </div>
 
     <!-- ═══════════ ANALYTICS ROW ═══════════ -->
-    <div class="dashboard-grid" style="margin-bottom: 2rem;">
+    <div class="dashboard-grid" style="margin-bottom: 3rem;">
         <!-- TECHNIQUE ACCURACY TREND CHART -->
-        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 1.5rem;">
-            <h3 style="margin-bottom: 0.5rem;">📈 Technique Progress Trend <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(Biomechanical standard)</span></h3>
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 1.5rem; border-radius: 20px;">
+            <h3 style="margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1.15rem; font-weight: 800;">
+                <i data-lucide="trending-up" style="width: 20px; height: 20px; color: #16a34a;"></i>
+                Technique Progress Trend 
+                <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(Biomechanical standard)</span>
+            </h3>
             <div style="width: 100%; height: 350px;">
                 <canvas id="similarityChart"></canvas>
             </div>
         </div>
 
         <!-- AI COACHING QUICK TIPS -->
-        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; background: linear-gradient(135deg, rgba(22, 163, 74, 0.03) 0%, rgba(13, 148, 136, 0.05) 100%);">
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 1.5rem; background: linear-gradient(135deg, rgba(22, 163, 74, 0.02) 0%, rgba(13, 148, 136, 0.04) 100%); border-radius: 20px;">
             <div>
                 <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem;">
-                    <span style="font-size: 1.4rem;">🧠</span>
+                    <i data-lucide="brain" style="width: 22px; height: 22px; color: #16a34a;"></i>
                     <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #1e293b;">AI Coaching Tips</h3>
                 </div>
 
@@ -89,22 +112,22 @@
 
                     {% if completed_records | length == 0 %}
                         <!-- Default tips for new users -->
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #16a34a;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">🎯</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #16a34a; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="target" style="width: 18px; height: 18px; color: #16a34a;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Upload Your First Video</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Record a 30-60 second practice session and get personalized feedback on your technique.</p>
                             </div>
                         </div>
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #0d9488;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">📐</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #0d9488; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="compass" style="width: 18px; height: 18px; color: #0d9488;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Focus on Elbow Angle</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Maintain 90-120° elbow angle during overhead shots for maximum power and reduced injury risk.</p>
                             </div>
                         </div>
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #8b5cf6;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">🦵</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #8b5cf6; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="chevron-up" style="width: 18px; height: 18px; color: #8b5cf6;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Knee Bend Matters</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Deep knee flexion (140-160°) generates explosive court movement and better shot stability.</p>
@@ -114,41 +137,41 @@
                         <!-- Dynamic tips based on user's performance data -->
                         {% set avg = avg_similarity %}
                         {% if avg < 50 %}
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #ef4444;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">⚡</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #ef4444; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: #ef4444;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Posture Fundamentals</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Your avg score is {{ "%.0f"|format(avg) }}%. Focus on basic stance — feet shoulder-width, racket up, knees bent.</p>
                             </div>
                         </div>
                         {% elif avg < 70 %}
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #f59e0b;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">📈</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #f59e0b; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="line-chart" style="width: 18px; height: 18px; color: #f59e0b;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Good Progress — Refine Timing</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">At {{ "%.0f"|format(avg) }}% accuracy, focus on wrist snap timing and follow-through consistency.</p>
                             </div>
                         </div>
                         {% else %}
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #16a34a;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">🏆</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #16a34a; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Excellent Form!</p>
-                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">{{ "%.0f"|format(avg) }}% accuracy — your technique is strong. Try advanced drills and deception shots.</p>
+                                <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">{{ "%.0f"|format(avg) }}% accuracy — your technique is strong. Keep it up!</p>
                             </div>
                         </div>
                         {% endif %}
 
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #0d9488;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">🔥</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #0d9488; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="zap" style="width: 18px; height: 18px; color: #0d9488;"></i></span>
                             <div>
-                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">{{ streak }}-Day Streak Active</p>
+                                <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #0d9488;">{{ streak }}-Day Streak Active</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Consistency is key! Keep practicing daily to build muscle memory and reach new personal bests.</p>
                             </div>
                         </div>
 
-                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.7); border-radius: 12px; border-left: 3px solid #8b5cf6;">
-                            <span style="font-size: 1.2rem; flex-shrink: 0;">🎯</span>
+                        <div style="display: flex; align-items: flex-start; gap: 0.85rem; padding: 0.9rem 1rem; background: rgba(255,255,255,0.9); border-radius: 12px; border-left: 4px solid #8b5cf6; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
+                            <span style="font-size: 1.2rem; flex-shrink: 0;"><i data-lucide="award" style="width: 18px; height: 18px; color: #8b5cf6;"></i></span>
                             <div>
                                 <p style="margin: 0 0 0.2rem 0; font-weight: 700; font-size: 0.88rem; color: #1e293b;">Next Goal: {{ "%.0f"|format(ns.best_score + 5) }}% Best Score</p>
                                 <p style="margin: 0; font-size: 0.8rem; color: #64748b; line-height: 1.45;">Your personal best is {{ "%.0f"|format(ns.best_score) }}%. Upload another session to beat your record!</p>
@@ -159,16 +182,18 @@
             </div>
 
             <div style="text-align: right; border-top: 1px solid rgba(22, 163, 74, 0.08); padding-top: 0.75rem;">
-                <a href="{{ url_for('history') }}" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.85rem; text-decoration: none;">View All Sessions &rarr;</a>
+                <a href="{{ url_for('history') }}" style="color: var(--accent-cyan); font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">
+                    View All Sessions <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+                </a>
             </div>
         </div>
     </div>
 
     <!-- ═══════════ UPLOAD SECTION ═══════════ -->
-    <div id="upload-section" class="card" style="margin-bottom: 3rem; padding: 3rem;">
+    <div id="upload-section" class="card" style="margin-bottom: 3rem; padding: 3rem; border-radius: 24px;">
         <p style="color: #16a34a; font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.5rem; text-align: center;">BADMINTON PERFORMANCE LAB</p>
-        <h2 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.5px;">Analyze your badminton video in one click</h2>
-        <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">Upload rally footage and get instant shot scoring, coaching tips, and playable best/worst moments.</p>
+        <h2 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 0.75rem; letter-spacing: -0.5px;">Analyze practice video in one click</h2>
+        <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">Upload video footage and get instant shot scoring, biomechanical tracking, and playable best/worst moments.</p>
         
         <!-- MODE SELECTOR TOGGLE -->
         <div style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 2.5rem; background: rgba(0,0,0,0.05); border-radius: 14px; padding: 0.35rem; max-width: 500px; margin-left: auto; margin-right: auto;">
@@ -182,27 +207,25 @@
             </button>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
             <form action="{{ url_for('upload_video') }}" method="POST" enctype="multipart/form-data" id="uploadForm" style="display: flex; flex-direction: column; height: 100%;">
                 <input type="hidden" name="analysis_mode" id="analysis_mode_input" value="single">
                 <input type="hidden" name="player_coords" id="player_coords_input">
 
                 <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem; border: 2px dashed rgba(22, 163, 74, 0.25); background: rgba(22, 163, 74, 0.02); min-height: 220px; border-radius: 16px; transition: all 0.3s; cursor: pointer;">
                     <div id="upload-prompt-view" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-                        <svg width="50" height="50" fill="none" stroke="var(--accent-cyan)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem;">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                        </svg>
+                        <i data-lucide="upload-cloud" style="width: 50px; height: 50px; stroke: var(--accent-cyan); margin-bottom: 1rem;"></i>
                         <p id="uploadLabel" style="color: var(--text-main); font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Click or drag your video to upload</p>
                         <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Supports MP4, MOV, WEBM</p>
                     </div>
 
                     <div id="upload-selected-view" style="display: none; align-items: center; gap: 0.75rem; background: #ffffff; padding: 0.6rem 1.25rem; border-radius: 99px; border: 1px solid rgba(22, 163, 74, 0.15); box-shadow: 0 4px 12px rgba(0,0,0,0.03); max-width: 90%;">
-                        <span style="font-size: 1.25rem; color: #16a34a;">📹</span>
+                        <span style="font-size: 1.25rem; color: #16a34a;"><i data-lucide="video" style="width: 20px; height: 20px;"></i></span>
                         <div style="text-align: left; overflow: hidden;">
-                            <p id="selected-file-name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"></p>
+                            <p id="selected-file-name" style="font-weight: 700; font-size: 0.9rem; color: var(--text-main); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;"></p>
                             <p id="selected-file-size" style="font-size: 0.75rem; color: var(--text-muted); margin: 0;"></p>
                         </div>
-                        <button type="button" onclick="discardSelectedFile(event)" style="background: none; border: none; font-size: 1.1rem; color: #94a3b8; cursor: pointer; padding: 0 0.25rem; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
+                        <button type="button" onclick="discardSelectedFile(event)" style="background: none; border: none; font-size: 1.25rem; color: #94a3b8; cursor: pointer; padding: 0 0.25rem; transition: color 0.2s; font-weight: bold; line-height: 1;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
                     </div>
                     
                     <input type="file" name="videoFile" id="file-input" accept="video/*" style="display: none;" onchange="handleFileSelection(this)">
@@ -215,9 +238,7 @@
             <!-- Live Camera Box -->
             <div class="upload-area" id="live-cam-zone" style="background: rgba(167, 139, 250, 0.02); border: 2px dashed rgba(167, 139, 250, 0.25); border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; margin: 0; min-height: 250px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='rgba(167, 139, 250, 0.05)'; this.style.borderColor='#8b5cf6';" onmouseout="this.style.background='rgba(167, 139, 250, 0.02)'; this.style.borderColor='rgba(167, 139, 250, 0.25)';">
                 <div id="cam-ui-initial" style="text-align: center;">
-                    <svg width="50" height="50" fill="none" stroke="#8b5cf6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>
+                    <i data-lucide="video" style="width: 50px; height: 50px; color: #8b5cf6; margin-bottom: 1rem; display: block; margin-left: auto; margin-right: auto;"></i>
                     <p style="color: var(--text-main); font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">Live Web Camera</p>
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Record a short video instantly.</p>
                     <button type="button" class="btn" style="background: #8b5cf6; box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);" onclick="startCamera()">Enable Camera</button>
@@ -248,41 +269,39 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 1rem;">
             <!-- Left Card: Fast Insights -->
             <div class="card" style="background: rgba(248, 250, 249, 0.5); border: 1px solid rgba(22, 163, 74, 0.08); padding: 1.75rem; border-radius: 16px; box-shadow: none;">
-                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">Fast insights</h4>
+                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;"><i data-lucide="info" style="width: 18px; height: 18px; color: #16a34a;"></i> Fast insights</h4>
                 <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.25rem;">The app processes pose data and wrist impact frames to identify and score your key shots.</p>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 500;">
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Real-time progress updates
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 600;">
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="check" style="width: 16px; height: 16px; color: #16a34a;"></i> Real-time progress updates
                     </li>
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Best and worst shot preview videos
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="check" style="width: 16px; height: 16px; color: #16a34a;"></i> Best and worst shot preview videos
                     </li>
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="color: #16a34a; font-weight: bold; font-size: 1.1rem;">✓</span> Personalized practice recommendations
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="check" style="width: 16px; height: 16px; color: #16a34a;"></i> Personalized practice recommendations
                     </li>
                 </ul>
             </div>
 
             <!-- Right Card: Upload Guide -->
             <div class="card" style="background: rgba(248, 250, 249, 0.5); border: 1px solid rgba(22, 163, 74, 0.08); padding: 1.75rem; border-radius: 16px; box-shadow: none;">
-                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">Upload guide</h4>
+                <h4 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;"><i data-lucide="help-circle" style="width: 18px; height: 18px; color: #16a34a;"></i> Upload guide</h4>
                 <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.25rem;">Use 1-2 minute practice clips with clear court view. Longer videos are downsampled to speed up analysis.</p>
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 500;">
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.1rem;">🎥</span> MP4, MOV, or WebM only
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.9rem; color: #334155; font-weight: 600;">
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="file-video" style="width: 16px; height: 16px; color: #64748b;"></i> MP4, MOV, or WebM only
                     </li>
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.1rem;">📐</span> Max 100MB
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="hard-drive" style="width: 16px; height: 16px; color: #64748b;"></i> Max 100MB
                     </li>
-                    <li style="display: flex; align-items: center; gap: 0.75rem;">
-                        <span style="font-size: 1.1rem;">⏱️</span> Recommended length: 5s - 1min
+                    <li style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="clock" style="width: 16px; height: 16px; color: #64748b;"></i> Recommended length: 5s - 1min
                     </li>
                 </ul>
             </div>
         </div>
     </div>
-
-
 </div>
 
 <script>
