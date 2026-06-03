@@ -541,6 +541,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Shoulder opens too early — contact point is low and behind the body',
                 'Elbow drops below shoulder level before contact — cutting overhead power',
                 'Wrist snap released too early — wasting velocity on empty air'
+            ],
+            'improvement_videos': [
+                {'title': 'How to Play The PERFECT SMASH', 'youtube_id': 'JzNEqZcNbk4', 'channel': 'Basic Feather'},
+                {'title': 'Smash Tutorial — Power & Timing', 'youtube_id': 'tT83y-K3-Hk', 'channel': 'Badminton Insight'},
             ]
         },
         'Clear': {
@@ -555,6 +559,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Stiff elbow at preparation — prevents whip acceleration',
                 'Flat-footed stance — slow weight transfer to the front foot',
                 'Short follow-through across body — clears falling short of opponent\'s baseline'
+            ],
+            'improvement_videos': [
+                {'title': 'Clear Shot Technique Tutorial', 'youtube_id': 'vGD-VU0sAc8', 'channel': 'Badminton Insight'},
+                {'title': 'Overhead Clear Masterclass', 'youtube_id': 'faG2NWIVM18', 'channel': 'Badminton Famly'},
             ]
         },
         'Drop': {
@@ -569,6 +577,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Grip too tight at contact — drop shot flies too long and high',
                 'Lowered contact point — drop shot hits the net or lacks steep angle',
                 'Torso leaning backward — losing control over shuttle trajectory'
+            ],
+            'improvement_videos': [
+                {'title': 'Drop Shot Tutorial — Deception', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight'},
+                {'title': 'Master the Stick Smash & Drop', 'youtube_id': 's1R1hZ4c2gY', 'channel': 'Badminton Insight'},
             ]
         },
         'Drive': {
@@ -583,6 +595,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Torso standing too upright — unable to react to low flat drives',
                 'Long slow wind-up swing — late contact on fast incoming rallies',
                 'Wrist floppy on impact — drives going out of bounds laterally'
+            ],
+            'improvement_videos': [
+                {'title': 'Drive Shot Technique Tutorial', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly'},
+                {'title': 'How to Play Drives Perfectly', 'youtube_id': 'AGY-gQ_3O8Y', 'channel': 'Shuttle Life'},
             ]
         },
         'Lift': {
@@ -597,6 +613,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Landing on toes during lunge — placing excessive strain on knees',
                 'Elbow drop before contact — failing to scoop from under the shuttle',
                 'Wobbly ankles on landing — loss of balance during recovery'
+            ],
+            'improvement_videos': [
+                {'title': 'Net Lift — 3 Ways to Practice', 'youtube_id': 'u1725R0v484', 'channel': 'Basic Feather'},
+                {'title': 'Badminton Lift for Beginners', 'youtube_id': 'tT83y-K3-Hk', 'channel': 'Badminton Insight'},
             ]
         },
         'Net Shot': {
@@ -611,6 +631,10 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Over-swinging at the net — net shot flies too high and long',
                 'Late contact below net tape level — unable to cross net steeply',
                 'Stiff wrist on contact — lack of touch feel'
+            ],
+            'improvement_videos': [
+                {'title': 'Net Shot Masterclass Tutorial', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight'},
+                {'title': 'Net Kill & Net Shot Tips', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly'},
             ]
         }
     }
@@ -654,7 +678,9 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
         "worst_moments": worst_moments,
         "wrong_actions": content['body_faults'],
         "drill_title": content['drill_title'],
-        "drill_steps": content['drill_steps']
+        "drill_steps": content['drill_steps'],
+        "improvement_videos": content.get('improvement_videos', []),
+        "worst_shot_type": worst_shot
     }
 
 def get_fallback_shadow_data(record):

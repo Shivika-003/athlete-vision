@@ -8,7 +8,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1.5rem;">
         <div>
             <p style="color: #16a34a; font-weight: 700; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">PERFORMANCE HUB</p>
-            <h1 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">Dashboard</h1>
+            <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">Dashboard</h1>
             <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Track your badminton technique over time and analyze practice sessions</p>
         </div>
         <a href="#upload-section" class="btn" style="display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 12px; background: #16a34a; padding: 0.75rem 1.5rem; font-size: 0.95rem; box-shadow: 0 4px 16px rgba(22, 163, 74, 0.2); font-weight: 700;">
@@ -85,9 +85,9 @@
     </div>
 
     <!-- ═══════════ UPLOAD SECTION ═══════════ -->
-    <div id="upload-section" class="card" style="margin-bottom: 1rem; padding: 1.25rem 2rem; border-radius: 24px; background: linear-gradient(135deg, #ffffff 60%, #f0fdf4 100%); border: 1.5px solid rgba(22, 163, 74, 0.15);">
+    <div id="upload-section" class="card" style="margin-bottom: 1rem; padding: 1.25rem 2rem; border-radius: 24px; background: linear-gradient(135deg, rgba(5, 34, 37, 0.7) 60%, rgba(22, 163, 74, 0.08) 100%); border: 1.5px solid rgba(22, 163, 74, 0.15);">
         <p style="color: #16a34a; font-weight: 700; font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.25rem; text-align: center;">BADMINTON PERFORMANCE LAB</p>
-        <h2 style="font-size: 1.85rem; font-weight: 800; color: #1e293b; text-align: center; margin-bottom: 0.35rem; letter-spacing: -0.5px;">Analyze practice video in one click</h2>
+        <h2 style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); text-align: center; margin-bottom: 0.35rem; letter-spacing: -0.5px;">Analyze practice video in one click</h2>
         <p style="color: var(--text-muted); text-align: center; margin-bottom: 1rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.45; font-size: 0.88rem;">Upload video footage and get instant shot scoring, biomechanical tracking, and playable best/worst moments.</p>
         
         <!-- MODE SELECTOR TOGGLE -->
@@ -103,15 +103,15 @@
         </div>
 
         <!-- SLIDER CONTAINER (BOTH IN ONE FRAME) -->
-        <div id="upload-slider-frame" style="position: relative; overflow: hidden; max-width: 580px; margin: 0 auto 1.25rem auto; width: 100%; border-radius: 20px; border: 1.5px solid rgba(22, 163, 74, 0.15); background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(22, 163, 74, 0.03);">
+        <div id="upload-slider-frame" style="position: relative; overflow: hidden; max-width: 580px; margin: 0 auto 1.25rem auto; width: 100%; border-radius: 20px; border: 1.5px solid rgba(22, 163, 74, 0.15); background: rgba(5, 34, 37, 0.45); backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(22, 163, 74, 0.03);">
             
             <!-- Left Arrow (<) -->
-            <button type="button" id="slider-prev-btn" onclick="prevUploadPage()" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 10; cursor: pointer; background: rgba(255,255,255,0.9); border: 1px solid rgba(15, 23, 42, 0.08); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); color: #1e293b; transition: all 0.2s; opacity: 0; pointer-events: none;">
+            <button type="button" id="slider-prev-btn" onclick="prevUploadPage()" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 10; cursor: pointer; background: rgba(5, 34, 37, 0.85); border: 1px solid rgba(22, 163, 74, 0.15); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); color: var(--text-main); transition: all 0.2s; opacity: 0; pointer-events: none;">
                 <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
             </button>
             
             <!-- Right Arrow (>) -->
-            <button type="button" id="slider-next-btn" onclick="nextUploadPage()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10; cursor: pointer; background: rgba(255,255,255,0.9); border: 1px solid rgba(15, 23, 42, 0.08); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); color: #1e293b; transition: all 0.2s;">
+            <button type="button" id="slider-next-btn" onclick="nextUploadPage()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 10; cursor: pointer; background: rgba(5, 34, 37, 0.85); border: 1px solid rgba(22, 163, 74, 0.15); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); color: var(--text-main); transition: all 0.2s;">
                 <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
             </button>
 
@@ -188,18 +188,18 @@
         </div>
 
         <!-- SINGLE COMBINED CARD: INSIGHTS & GUIDE -->
-        <div class="card" style="background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(8px); border: 1px solid rgba(22, 163, 74, 0.1); padding: 1rem 1.5rem; border-radius: 16px; box-shadow: none; margin-bottom: 0rem;">
+        <div class="card" style="background: rgba(5, 34, 37, 0.45); backdrop-filter: blur(8px); border: 1px solid rgba(22, 163, 74, 0.15); padding: 1rem 1.5rem; border-radius: 16px; box-shadow: none; margin-bottom: 0rem;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 
                 <!-- Column 1: Fast Insights -->
                 <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #1e293b; margin-top: 0; margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin-top: 0; margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.4rem;">
                         <i data-lucide="info" style="width: 16px; height: 16px; color: #16a34a;"></i> Fast insights
                     </h4>
                     <p style="color: var(--text-muted); font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; font-weight: 500;">
                         The app processes pose data and wrist impact frames to identify and score your key shots.
                     </p>
-                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.78rem; color: #334155; font-weight: 600;">
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.78rem; color: var(--text-main); font-weight: 600;">
                         <li style="display: flex; align-items: center; gap: 0.4rem;">
                             <i data-lucide="check" style="width: 14px; height: 14px; color: #16a34a;"></i> Real-time progress updates
                         </li>
@@ -214,13 +214,13 @@
                 
                 <!-- Column 2: Upload Guide -->
                 <div>
-                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #1e293b; margin-top: 0; margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main); margin-top: 0; margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.4rem;">
                         <i data-lucide="help-circle" style="width: 16px; height: 16px; color: #16a34a;"></i> Upload guide
                     </h4>
                     <p style="color: var(--text-muted); font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.75rem; font-weight: 500;">
                         Use 1-2 minute practice clips with clear court view. Longer videos are downsampled to speed up analysis.
                     </p>
-                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.78rem; color: #334155; font-weight: 600;">
+                    <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.78rem; color: var(--text-main); font-weight: 600;">
                         <li style="display: flex; align-items: center; gap: 0.4rem;">
                             <i data-lucide="file-video" style="width: 14px; height: 14px; color: #64748b;"></i> MP4, MOV, or WebM only
                         </li>
@@ -241,8 +241,8 @@
     <div class="dashboard-grid" style="margin-bottom: 3rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem;">
         <!-- WEEKLY PRACTICE PLAN -->
         <div class="dashboard-analytics-card" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 0.65rem; padding: 1rem 1.15rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(15, 23, 42, 0.05); padding-bottom: 0.4rem; margin-bottom: 0px;">
-                <h3 style="margin: 0; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; font-weight: 800; color: #1e293b;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid rgba(34, 197, 94, 0.15); padding-bottom: 0.4rem; margin-bottom: 0px;">
+                <h3 style="margin: 0; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">
                     <span style="font-size: 1.1rem;">📅</span> Weekly Practice Plan
                 </h3>
                 <span id="practice-plan-badge" style="font-weight: 800; font-size: 0.65rem; padding: 3px 10px; border-radius: 99px; letter-spacing: 0.5px; text-transform: uppercase; transition: all 0.2s;">
@@ -256,11 +256,11 @@
  
             <div style="display: flex; flex-direction: column; gap: 0.45rem;">
                 <!-- Day 1 -->
-                <div id="practice-day-1" onclick="togglePracticeDay(1)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
+                <div id="practice-day-1" onclick="togglePracticeDay(1)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; background: rgba(5, 34, 37, 0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
                     <div id="check-icon-1" style="display: flex; align-items: center; justify-content: center; border-radius: 5px; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; transition: all 0.2s;"></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0px;">
-                            <span style="font-weight: 800; color: #1e293b; font-size: 0.8rem;">Day 1: Stance & Agility</span>
+                            <span style="font-weight: 800; color: var(--text-main); font-size: 0.8rem;">Day 1: Stance & Agility</span>
                             <span style="color: #64748b; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">20 Mins</span>
                         </div>
                         <p style="margin: 0; font-size: 0.7rem; color: #64748b; line-height: 1.3; font-weight: 500;">Practice basic shadow movements and low-ready court positioning drills.</p>
@@ -268,11 +268,11 @@
                 </div>
  
                 <!-- Day 2 -->
-                <div id="practice-day-2" onclick="togglePracticeDay(2)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
+                <div id="practice-day-2" onclick="togglePracticeDay(2)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; background: rgba(5, 34, 37, 0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
                     <div id="check-icon-2" style="display: flex; align-items: center; justify-content: center; border-radius: 5px; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; transition: all 0.2s;"></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0px;">
-                            <span style="font-weight: 800; color: #1e293b; font-size: 0.8rem;">Day 2: Overhead Clears</span>
+                            <span style="font-weight: 800; color: var(--text-main); font-size: 0.8rem;">Day 2: Overhead Clears</span>
                             <span style="color: #64748b; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">30 Mins</span>
                         </div>
                         <p style="margin: 0; font-size: 0.7rem; color: #64748b; line-height: 1.3; font-weight: 500;">Focus on full shoulder rotation and 90-120° elbow extensions at hitting frame.</p>
@@ -280,11 +280,11 @@
                 </div>
  
                 <!-- Day 3 -->
-                <div id="practice-day-3" onclick="togglePracticeDay(3)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
+                <div id="practice-day-3" onclick="togglePracticeDay(3)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; background: rgba(5, 34, 37, 0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
                     <div id="check-icon-3" style="display: flex; align-items: center; justify-content: center; border-radius: 5px; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; transition: all 0.2s;"></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0px;">
-                            <span style="font-weight: 800; color: #1e293b; font-size: 0.8rem;">Day 3: Smash Technique</span>
+                            <span style="font-weight: 800; color: var(--text-main); font-size: 0.8rem;">Day 3: Smash Technique</span>
                             <span style="color: #64748b; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">25 Mins</span>
                         </div>
                         <p style="margin: 0; font-size: 0.7rem; color: #64748b; line-height: 1.3; font-weight: 500;">Practice core pivot rotation and fast wrist snap actions for velocity.</p>
@@ -292,11 +292,11 @@
                 </div>
  
                 <!-- Day 4 -->
-                <div id="practice-day-4" onclick="togglePracticeDay(4)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
+                <div id="practice-day-4" onclick="togglePracticeDay(4)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; background: rgba(5, 34, 37, 0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
                     <div id="check-icon-4" style="display: flex; align-items: center; justify-content: center; border-radius: 5px; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; transition: all 0.2s;"></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0px;">
-                            <span style="font-weight: 800; color: #1e293b; font-size: 0.8rem;">Day 4: Net Play & Drops</span>
+                            <span style="font-weight: 800; color: var(--text-main); font-size: 0.8rem;">Day 4: Net Play & Drops</span>
                             <span style="color: #64748b; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">20 Mins</span>
                         </div>
                         <p style="margin: 0; font-size: 0.7rem; color: #64748b; line-height: 1.3; font-weight: 500;">Work on soft touch net drops and tight wrist control at the tape.</p>
@@ -304,11 +304,11 @@
                 </div>
  
                 <!-- Day 5 -->
-                <div id="practice-day-5" onclick="togglePracticeDay(5)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 12px; background: #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
+                <div id="practice-day-5" onclick="togglePracticeDay(5)" style="display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.45rem 0.75rem; border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; background: rgba(5, 34, 37, 0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.01); cursor: pointer; transition: all 0.2s;">
                     <div id="check-icon-5" style="display: flex; align-items: center; justify-content: center; border-radius: 5px; width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; transition: all 0.2s;"></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0px;">
-                            <span style="font-weight: 800; color: #1e293b; font-size: 0.8rem;">Day 5: Simulation & Footwork</span>
+                            <span style="font-weight: 800; color: var(--text-main); font-size: 0.8rem;">Day 5: Simulation & Footwork</span>
                             <span style="color: #64748b; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">35 Mins</span>
                         </div>
                         <p style="margin: 0; font-size: 0.7rem; color: #64748b; line-height: 1.3; font-weight: 500;">Combine shadow play with full-court movement drills and high-intensity intervals.</p>
@@ -319,7 +319,7 @@
  
         <!-- TECHNIQUE PROGRESS CHART -->
         <div class="dashboard-analytics-card" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 1.15rem;">
-            <h3 style="margin-bottom: 0.15rem; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; font-weight: 800; color: #1e293b;">
+            <h3 style="margin-bottom: 0.15rem; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">
                 <i data-lucide="trending-up" style="width: 18px; height: 18px; color: #16a34a;"></i>
                 Technique Progress Chart 
                 <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted);">(Learning accuracy)</span>
@@ -746,12 +746,12 @@
             checkIcon.style.background = '#16a34a';
             checkIcon.style.border = 'none';
             checkIcon.innerHTML = '<i data-lucide="check" style="width: 10px; height: 10px; stroke-width: 3; color: white;"></i>';
-            row.style.borderColor = 'rgba(22, 163, 74, 0.15)';
+            row.style.borderColor = 'rgba(34, 197, 94, 0.35)';
         } else {
             checkIcon.style.background = 'transparent';
-            checkIcon.style.border = '1.5px solid #cbd5e1';
+            checkIcon.style.border = '1.5px solid rgba(34, 197, 94, 0.2)';
             checkIcon.innerHTML = '';
-            row.style.borderColor = 'rgba(15, 23, 42, 0.08)';
+            row.style.borderColor = 'rgba(34, 197, 94, 0.15)';
         }
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
