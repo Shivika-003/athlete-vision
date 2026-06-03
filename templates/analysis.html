@@ -1252,6 +1252,10 @@
         <div class="card animate-fade-in-up" style="margin-bottom: 0;">
             <h3 style="margin-bottom: 1rem; color: #16a34a; font-size: 1.3rem;">📹 Original Uploaded Video</h3>
             <video controls loop playsinline style="max-height: 340px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(22, 163, 74, 0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
+                {% set video_parts = record.processed_video_path.split('|') if record.processed_video_path else [] %}
+                {% if video_parts|length >= 3 and video_parts[2] %}
+                    <source src="{{ url_for('serve_processed_video', filename=video_parts[2]) }}" type="video/mp4">
+                {% endif %}
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
             </video>

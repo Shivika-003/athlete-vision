@@ -1255,11 +1255,13 @@ def learning_center():
 
 @app.route('/processed/<filename>')
 def serve_processed_video(filename):
-    return send_from_directory(app.config['PROCESSED_FOLDER'], filename)
+    mimetype = 'video/mp4' if filename.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) else None
+    return send_from_directory(app.config['PROCESSED_FOLDER'], filename, mimetype=mimetype)
 
 @app.route('/uploads/<filename>')
 def serve_uploaded_video(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    mimetype = 'video/mp4' if filename.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) else None
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, mimetype=mimetype)
 
 @app.route('/delete_video/<int:record_id>', methods=['POST'])
 @login_required
