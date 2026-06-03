@@ -1345,8 +1345,9 @@
         {% for part in feedback_parts %}
             {% set part_trimmed = part.strip() %}
             {% if part_trimmed %}
+            {% set part_formatted = part_trimmed.replace(' (2)', '\n(2)').replace(' (3)', '\n(3)') %}
             <div class="feedback-card {% if '❌' in part_trimmed or 'Issue' in part_trimmed %}card-issue{% elif '🎯' in part_trimmed or 'Fix' in part_trimmed %}card-fix{% elif '💡' in part_trimmed or 'Why' in part_trimmed %}card-why{% elif '🏋' in part_trimmed or 'Drill' in part_trimmed %}card-drill{% elif '🎾' in part_trimmed or 'Cue' in part_trimmed %}card-cue{% elif '✅' in part_trimmed or 'Checkpoint' in part_trimmed or '💎' in part_trimmed or 'Pro' in part_trimmed %}card-checkpoint{% else %}card-default{% endif %}">
-                <p style="font-size: 1.02rem; color: var(--text-main); line-height: 1.7; margin: 0; white-space: pre-line;">{{ part_trimmed }}</p>
+                <p style="font-size: 1.02rem; color: var(--text-main); line-height: 1.7; margin: 0; white-space: pre-line;">{{ part_formatted }}</p>
             </div>
             {% endif %}
         {% endfor %}

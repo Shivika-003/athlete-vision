@@ -1146,6 +1146,8 @@ def show_user_progress(user_id, student=None):
                         issue_msg = p_trimmed.replace("❌ Issue:", "").strip()
                     elif "Drill:" in p_trimmed:
                         drill_msg = p_trimmed.split(':', 1)[1].strip()
+                        # Format backward compatibility for older database entries to put each point on a new row
+                        drill_msg = drill_msg.replace(" (2)", "\n(2)").replace(" (3)", "\n(3)")
                         
             if not issue_msg:
                 issue_msg = f"{joint.capitalize()} alignment error during {shot}."
