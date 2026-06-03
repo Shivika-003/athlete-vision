@@ -1159,58 +1159,58 @@
         
         <!-- JOINT ANGLE BREAKDOWN -->
         <div class="card animate-fade-in-up" style="margin-bottom: 0;">
-            <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">📐 Joint Angle Breakdown <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(at contact frame)</span></h3>
+            <h3 style="margin-bottom: 1.5rem; color: #16a34a;">📐 Joint Angle Breakdown <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">(at contact frame)</span></h3>
         
         <!-- Shoulder -->
         <div class="angle-bar">
             <span class="angle-bar-label">Shoulder</span>
             <div class="angle-bar-track">
-                <div class="angle-bar-fill" style="width: {{ ((record.shoulder_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #f472b6, #ec4899);"></div>
+                <div class="angle-bar-fill" style="width: {{ ((record.shoulder_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #a7f3d0, #10b981);"></div>
             </div>
-            <span class="angle-bar-value" style="color: var(--accent-pink);">{{ "%.0f"|format(record.shoulder_angle or 0) }}°</span>
+            <span class="angle-bar-value" style="color: #16a34a;">{{ "%.0f"|format(record.shoulder_angle or 0) }}°</span>
         </div>
         
         <!-- Elbow -->
         <div class="angle-bar">
             <span class="angle-bar-label">Elbow</span>
             <div class="angle-bar-track">
-                <div class="angle-bar-fill" style="width: {{ ((record.elbow_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #00d4ff, #0ea5e9);"></div>
+                <div class="angle-bar-fill" style="width: {{ ((record.elbow_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #6ee7b7, #0d9488);"></div>
             </div>
-            <span class="angle-bar-value" style="color: var(--accent-cyan);">{{ "%.0f"|format(record.elbow_angle or 0) }}°</span>
+            <span class="angle-bar-value" style="color: #16a34a;">{{ "%.0f"|format(record.elbow_angle or 0) }}°</span>
         </div>
 
         <!-- Wrist -->
         <div class="angle-bar">
             <span class="angle-bar-label">Wrist</span>
             <div class="angle-bar-track">
-                <div class="angle-bar-fill" style="width: {{ ((record.wrist_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div>
+                <div class="angle-bar-fill" style="width: {{ ((record.wrist_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #86efac, #22c55e);"></div>
             </div>
-            <span class="angle-bar-value" style="color: var(--accent-gold);">{{ "%.0f"|format(record.wrist_angle or 0) }}°</span>
+            <span class="angle-bar-value" style="color: #16a34a;">{{ "%.0f"|format(record.wrist_angle or 0) }}°</span>
         </div>
 
         <!-- Knee -->
         <div class="angle-bar">
             <span class="angle-bar-label">Knee</span>
             <div class="angle-bar-track">
-                <div class="angle-bar-fill" style="width: {{ ((record.knee_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #4ade80, #22c55e);"></div>
+                <div class="angle-bar-fill" style="width: {{ ((record.knee_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #bef264, #84cc16);"></div>
             </div>
-            <span class="angle-bar-value" style="color: var(--accent-neon-green);">{{ "%.0f"|format(record.knee_angle or 0) }}°</span>
+            <span class="angle-bar-value" style="color: #16a34a;">{{ "%.0f"|format(record.knee_angle or 0) }}°</span>
         </div>
 
         <!-- Ankle -->
         <div class="angle-bar">
             <span class="angle-bar-label">Ankle</span>
             <div class="angle-bar-track">
-                <div class="angle-bar-fill" style="width: {{ ((record.ankle_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #a78bfa, #8b5cf6);"></div>
+                <div class="angle-bar-fill" style="width: {{ ((record.ankle_angle or 0) / 180 * 100)|round }}%; background: linear-gradient(90deg, #cbd5e1, #64748b);"></div>
             </div>
-            <span class="angle-bar-value" style="color: #a78bfa;">{{ "%.0f"|format(record.ankle_angle or 0) }}°</span>
+            <span class="angle-bar-value" style="color: #475569;">{{ "%.0f"|format(record.ankle_angle or 0) }}°</span>
         </div>
         </div>
         
         <!-- ORIGINAL VIDEO -->
         <div class="card animate-fade-in-up" style="margin-bottom: 0;">
-            <h3 style="margin-bottom: 1rem; color: var(--accent-pink); font-size: 1.3rem;">📹 Original Uploaded Video</h3>
-            <video controls loop muted playsinline style="max-height: 480px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(236,72,153,0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
+            <h3 style="margin-bottom: 1rem; color: #16a34a; font-size: 1.3rem;">📹 Original Uploaded Video</h3>
+            <video controls loop muted playsinline style="max-height: 480px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(22, 163, 74, 0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
             </video>
