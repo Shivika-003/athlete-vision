@@ -51,6 +51,13 @@
                         <span class="desc">Upload & analyze</span>
                     </div>
                 </a>
+                <a href="{{ url_for('progress') }}" class="nav-item {% if request.path == url_for('progress') %}active{% endif %}">
+                    <span class="icon">📈</span>
+                    <div class="nav-item-text">
+                        <span class="title">Progress Tracker</span>
+                        <span class="desc">Improvement over time</span>
+                    </div>
+                </a>
                 <a href="{{ url_for('history') }}" class="nav-item {% if request.path == url_for('history') %}active{% endif %}">
                     <span class="icon">📜</span>
                     <div class="nav-item-text">
@@ -63,6 +70,13 @@
                     <div class="nav-item-text">
                         <span class="title">Learning Center</span>
                         <span class="desc">Coaching drills</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('leaderboard') }}" class="nav-item {% if request.path == url_for('leaderboard') %}active{% endif %}">
+                    <span class="icon">🏆</span>
+                    <div class="nav-item-text">
+                        <span class="title">Leaderboard</span>
+                        <span class="desc">Athlete standings</span>
                     </div>
                 </a>
             </nav>

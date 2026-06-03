@@ -79,13 +79,15 @@
                 {% else %}
                     <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; min-width: 120px;">
                         {% if record.shot_type in ('Match Analysis', 'Shadow Practice') %}
-                        <span style="font-size: 1rem; font-weight: 800; color: var(--accent-pink);">🤖 Shadow Practice</span>
+                        <span style="font-size: 0.95rem; font-weight: 800; color: #16a34a; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <i data-lucide="bot" style="width: 18px; height: 18px; stroke-width: 2.5;"></i> Shadow Practice
+                        </span>
                         {% else %}
                             {% if record.similarity_score %}
                             <span style="font-size: 1.15rem; font-weight: 800; color: {% if record.similarity_score > 80 %}#16a34a{% elif record.similarity_score > 60 %}#d97706{% else %}#ef4444{% endif %};">
                                 {{ "%.0f"|format(record.similarity_score) }}%
                             </span>
-                            <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Accuracy</span>
+                            <span style="font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Learning Accuracy</span>
                             {% endif %}
                             {% if record.performance_score is not none %}
                             <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-top: 0.1rem;">
@@ -195,7 +197,7 @@
             const dailySim = (totalSim / count).toFixed(1);
             
             document.getElementById('dailyAverageText').innerHTML = 
-                `You completed <strong>${count}</strong> session${count > 1 ? 's' : ''} with an Average Technique Accuracy of <strong id="simCounter" style="color: var(--accent-cyan); font-size: 1.25rem;">0.0%</strong> and Performance Score of <strong id="perfCounter" style="color: var(--accent-neon-green); font-size: 1.25rem;">0.0%</strong>!`;
+                `You completed <strong>${count}</strong> session${count > 1 ? 's' : ''} with an Average Technique Learning Accuracy of <strong id="simCounter" style="color: var(--accent-cyan); font-size: 1.25rem;">0.0%</strong> and Performance Score of <strong id="perfCounter" style="color: var(--accent-neon-green); font-size: 1.25rem;">0.0%</strong>!`;
             
             setTimeout(() => {
                 animateValue("simCounter", 0, parseFloat(dailySim), 1500);

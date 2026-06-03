@@ -943,8 +943,267 @@ def compare():
     record2 = VideoRecord.query.get_or_404(v2_id)
     if record1.user_id != current_user.id or record2.user_id != current_user.id:
         return redirect(url_for('dashboard'))
+        
+    def resolve_joint_scores(r):
+        # If it has values, use them
+        if r.arm_score is not None and r.hip_score is not None and r.knee_score is not None:
+            return r.arm_score, r.hip_score, r.knee_score
+            
+        overall = r.performance_score or r.similarity_score or 0
+        arm, hip, knee = overall, overall, overall
+        
+        import json
+        shadow_data = None
+        if r.comparison_details:
+            try:
+                shadow_data = json.loads(r.comparison_details)
+            except Exception:
+                pass
+        if not shadow_data:
+            shadow_data = get_fallback_shadow_data(r)
+            
+        if shadow_data and 'breakdown' in shadow_data:
+            breakdown = shadow_data['breakdown']
+            
+            # Arm: Smash & Clear
+            arm_vals = []
+            if breakdown.get('Smash', {}).get('count', 0) > 0:
+                arm_vals.append(breakdown['Smash']['score'])
+            if breakdown.get('Clear', {}).get('count', 0) > 0:
+                arm_vals.append(breakdown['Clear']['score'])
+            if arm_vals:
+                arm = sum(arm_vals) / len(arm_vals)
+                
+            # Hip: Drive & Net Shot
+            hip_vals = []
+            if breakdown.get('Drive', {}).get('count', 0) > 0:
+                hip_vals.append(breakdown['Drive']['score'])
+            if breakdown.get('Net Shot', {}).get('count', 0) > 0:
+                hip_vals.append(breakdown['Net Shot']['score'])
+            if hip_vals:
+                hip = sum(hip_vals) / len(hip_vals)
+                
+            # Knee: Lift & Drop
+            knee_vals = []
+            if breakdown.get('Lift', {}).get('count', 0) > 0:
+                knee_vals.append(breakdown['Lift']['score'])
+            if breakdown.get('Drop', {}).get('count', 0) > 0:
+                knee_vals.append(breakdown['Drop']['score'])
+            if knee_vals:
+                knee = sum(knee_vals) / len(knee_vals)
+                
+        return round(arm), round(hip), round(knee)
+
+    r1_arm, r1_hip, r1_knee = resolve_joint_scores(record1)
+    r2_arm, r2_hip, r2_knee = resolve_joint_scores(record2)
+    
+    record1.arm_score = r1_arm
+    record1.hip_score = r1_hip
+    record1.knee_score = r1_knee
+    
+    record2.arm_score = r2_arm
+    record2.hip_score = r2_hip
+    record2.knee_score = r2_knee
     
     return render_template('compare.html', r1=record1, r2=record2)
+
+
+@app.route('/progress')
+@login_required
+def progress():
+    return show_user_progress(current_user.id)
+
+
+@app.route('/user/<int:user_id>')
+@login_required
+def user_progress(user_id):
+    student = User.query.get_or_404(user_id)
+    return show_user_progress(user_id, student=student)
+
+
+def show_user_progress(user_id, student=None):
+    # Fetch completed records chronologically
+    all_records = VideoRecord.query.filter_by(user_id=user_id, status='completed').order_by(VideoRecord.upload_date.asc()).all()
+    
+    records = []
+    for r in all_records:
+        sim_val = r.similarity_score
+        perf_val = r.performance_score
+        if (sim_val and sim_val > 0) or (perf_val and perf_val > 0):
+            records.append(r)
+            
+    chart_labels = []
+    chart_sim_data = []
+    chart_perf_data = []
+    
+    # Organize records by shot type
+    from collections import defaultdict
+    shot_groups = defaultdict(list)
+    
+    for r in records:
+        sim_val = r.similarity_score or r.performance_score or 0
+        perf_val = r.performance_score or r.similarity_score or 0
+        
+        # Line chart coordinates
+        chart_labels.append(r.upload_date.strftime('%b %d'))
+        chart_sim_data.append(round(sim_val))
+        chart_perf_data.append(round(perf_val))
+        
+        # Group by shot type
+        if r.shot_type:
+            shot_name = r.shot_type.capitalize()
+            shot_groups[shot_name].append(r)
+            
+    # Bar chart details: first vs latest score
+    bar_data = []
+    for shot, recs in shot_groups.items():
+        first_rec = recs[0]
+        latest_rec = recs[-1]
+        
+        first_sim = first_rec.similarity_score or first_rec.performance_score or 0
+        latest_sim = latest_rec.similarity_score or latest_rec.performance_score or 0
+        
+        bar_data.append({
+            'shot_type': shot,
+            'first_score': round(first_sim),
+            'latest_score': round(latest_sim),
+            'count': len(recs)
+        })
+        
+    # Form Corrections
+    corrections = []
+    for shot, recs in shot_groups.items():
+        if len(recs) < 2:
+            continue
+        first_rec = recs[0]
+        latest_rec = recs[-1]
+        
+        first_comp = deserialize_comparison(first_rec.comparison_details)
+        latest_comp = deserialize_comparison(latest_rec.comparison_details)
+        
+        first_weaknesses = first_comp.get('weaknesses', [])
+        if not first_weaknesses:
+            continue
+            
+        first_weaknesses = sorted(first_weaknesses, key=lambda w: w.get('deviation', 0), reverse=True)
+        primary_weakness = first_weaknesses[0]
+        joint = primary_weakness.get('joint')
+        if not joint:
+            continue
+            
+        first_dev = primary_weakness.get('deviation', 0)
+        
+        # Find latest deviation for same joint
+        latest_dev = 0
+        joint_found = False
+        latest_weaknesses = latest_comp.get('weaknesses', [])
+        for w in latest_weaknesses:
+            if w.get('joint') == joint:
+                latest_dev = w.get('deviation', 0)
+                joint_found = True
+                break
+                
+        if not joint_found:
+            latest_diffs = latest_comp.get('joint_diffs', {})
+            if joint in latest_diffs:
+                latest_dev = latest_diffs[joint].get('abs_difference', 0)
+                
+        improvement = first_dev - latest_dev
+        if improvement >= 2.0:
+            issue_msg = ""
+            drill_msg = ""
+            if first_rec.feedback_text:
+                parts = first_rec.feedback_text.split('|')
+                for p in parts:
+                    p_trimmed = p.strip()
+                    if p_trimmed.startswith("❌ Issue:"):
+                        issue_msg = p_trimmed.replace("❌ Issue:", "").strip()
+                    elif "Drill:" in p_trimmed:
+                        drill_msg = p_trimmed.split(':', 1)[1].strip()
+                        
+            if not issue_msg:
+                issue_msg = f"{joint.capitalize()} alignment error during {shot}."
+            if not drill_msg:
+                drill_msg = f"Practice slow shadow swings focusing on {joint} control."
+                
+            corrections.append({
+                'shot_type': shot,
+                'joint': joint.capitalize(),
+                'first_date': first_rec.upload_date.strftime('%b %d, %Y'),
+                'latest_date': latest_rec.upload_date.strftime('%b %d, %Y'),
+                'first_dev': round(first_dev),
+                'latest_dev': round(latest_dev),
+                'improvement': round(improvement),
+                'issue_text': issue_msg,
+                'drill_text': drill_msg
+            })
+            
+    # Calculate highlights
+    total_sessions = len(records)
+    best_score = max((r.performance_score or r.similarity_score or 0 for r in records), default=0)
+    avg_accuracy = sum(r.similarity_score or r.performance_score or 0 for r in records) / len(records) if records else 0
+    
+    # Streak
+    import datetime
+    dates = sorted(set(r.upload_date.date() for r in records))
+    streak = 0
+    today = datetime.date.today()
+    for i in range(len(dates) - 1, -1, -1):
+        if dates[i] >= today - datetime.timedelta(days=streak + 1):
+            streak += 1
+        else:
+            break
+            
+    return render_template('progress.html',
+                           records=records,
+                           student=student,
+                           viewing_student=(student is not None and student.id != current_user.id),
+                           chart_labels=chart_labels,
+                           chart_sim_data=chart_sim_data,
+                           chart_perf_data=chart_perf_data,
+                           bar_data=bar_data,
+                           corrections=corrections,
+                           total_sessions=total_sessions,
+                           best_score=best_score,
+                           avg_accuracy=avg_accuracy,
+                           streak=streak)
+
+
+@app.route('/leaderboard')
+@login_required
+def leaderboard():
+    users = User.query.all()
+    leaderboard_data = []
+    
+    for u in users:
+        all_recs = VideoRecord.query.filter_by(user_id=u.id, status='completed').all()
+        records = [r for r in all_recs if (r.similarity_score and r.similarity_score > 0) or (r.performance_score and r.performance_score > 0)]
+        total_sessions = len(records)
+        best_score = max((r.performance_score or r.similarity_score or 0 for r in records), default=0.0)
+        
+        sim_scores = [r.similarity_score or r.performance_score or 0 for r in records]
+        avg_accuracy = sum(sim_scores) / len(sim_scores) if sim_scores else 0.0
+        
+        import datetime
+        dates = sorted(set(r.upload_date.date() for r in records))
+        streak = 0
+        today = datetime.date.today()
+        for i in range(len(dates) - 1, -1, -1):
+            if dates[i] >= today - datetime.timedelta(days=streak + 1):
+                streak += 1
+            else:
+                break
+                
+        leaderboard_data.append({
+            'user': u,
+            'best_score': round(best_score, 1),
+            'avg_accuracy': round(avg_accuracy, 1),
+            'total_sessions': total_sessions,
+            'streak': streak
+        })
+        
+    leaderboard_data.sort(key=lambda x: x['best_score'], reverse=True)
+    return render_template('leaderboard.html', leaderboard=leaderboard_data)
 
 
 # ═══════════════════════════════════════════════════════

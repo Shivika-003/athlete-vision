@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- ═══════════ HEADER ═══════════ -->
+    <div style="margin-bottom: 2rem;">
+        <p style="color: #16a34a; font-weight: 700; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">COMMUNITY PORTAL</p>
+        <h1 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">Athlete Leaderboard</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Compare form metrics, view training streaks, and check progress of other players</p>
+    </div>
+
+    <!-- ═══════════ FILTERS STRIP ═══════════ -->
+    <div class="card" style="padding: 1.25rem 1.5rem; border-radius: 16px; margin-bottom: 2rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; background: #ffffff;">
+        <!-- Search Input -->
+        <div style="flex-grow: 1; position: relative; min-width: 250px;">
+            <i data-lucide="search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: #94a3b8;"></i>
+            <input type="text" id="leaderboardSearch" placeholder="Search athletes by username..." onkeyup="filterLeaderboard()" style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem; font-size: 0.95rem; border-radius: 10px; border: 1px solid rgba(15, 23, 42, 0.08); background: #f8fafc;">
+        </div>
+
+        <!-- Sport Filter -->
+        <select id="sportFilter" onchange="filterLeaderboard()" style="padding: 0.65rem 1.25rem; font-size: 0.95rem; font-weight: 600; border-radius: 10px; border: 1px solid rgba(15, 23, 42, 0.08); background: #ffffff; min-width: 140px; cursor: pointer;">
+            <option value="all">All Sports</option>
+            <option value="badminton">Badminton</option>
+            <option value="other">Other</option>
+        </select>
+
+        <!-- Level Filter -->
+        <select id="levelFilter" onchange="filterLeaderboard()" style="padding: 0.65rem 1.25rem; font-size: 0.95rem; font-weight: 600; border-radius: 10px; border: 1px solid rgba(15, 23, 42, 0.08); background: #ffffff; min-width: 140px; cursor: pointer;">
+            <option value="all">All Levels</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+        </select>
+    </div>
+
+    <!-- ═══════════ LEADERBOARD TABLE CARD ═══════════ -->
+    <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+        <div style="overflow-x: auto; width: 100%;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                <thead>
+                    <tr style="border-bottom: 1.5px solid rgba(15, 23, 42, 0.06); background: rgba(248, 250, 252, 0.5);">
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b;">Rank</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b;">Athlete</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b;">Sport</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b;">Level</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b; text-align: center;">Streak</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b; text-align: center;">Sessions</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b; text-align: center;">Avg Learning Accuracy</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b; text-align: center;">Personal Best</th>
+                        <th style="padding: 1.2rem 1.5rem; font-weight: 800; color: #1e293b; text-align: center;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    {% for row in leaderboard %}
+                    <tr class="leaderboard-row" data-username="{{ row.user.username | lower }}" data-sport="{% if row.total_sessions > 0 %}badminton{% else %}other{% endif %}" data-level="{% if row.best_score >= 80 %}advanced{% elif row.best_score >= 50 %}intermediate{% else %}beginner{% endif %}" style="border-bottom: 1px solid rgba(15, 23, 42, 0.04); transition: background 0.2s;" onmouseover="this.style.background='rgba(22, 163, 74, 0.015)'" onmouseout="this.style.background='transparent'">
+                        <!-- Rank -->
+                        <td style="padding: 1.2rem 1.5rem; font-weight: 800;">
+                            {% if loop.index == 1 %}
+                                <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));">🥇</span>
+                            {% elif loop.index == 2 %}
+                                <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(148, 163, 184, 0.3));">🥈</span>
+                            {% elif loop.index == 3 %}
+                                <span style="font-size: 1.5rem; filter: drop-shadow(0 2px 4px rgba(180, 83, 9, 0.3));">🥉</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.95rem; padding-left: 0.25rem;">{{ loop.index }}</span>
+                            {% endif %}
+                        </td>
+                        <!-- Athlete -->
+                        <td style="padding: 1.2rem 1.5rem;">
+                            <div style="display: flex; flex-direction: column; line-height: 1.35;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="font-weight: 800; color: #1e293b; font-size: 0.98rem;">{{ row.user.username }}</span>
+                                    {% if row.user.id == current_user.id %}
+                                        <span style="background: rgba(22, 163, 74, 0.1); color: #16a34a; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">YOU</span>
+                                    {% endif %}
+                                </div>
+                                <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 500;">Training to improve motion form</span>
+                            </div>
+                        </td>
+                        <!-- Sport -->
+                        <td style="padding: 1.2rem 1.5rem; font-weight: 600; color: #475569;">
+                            {% if row.total_sessions > 0 %}
+                                Badminton
+                            {% else %}
+                                Other
+                            {% endif %}
+                        </td>
+                        <!-- Level -->
+                        <td style="padding: 1.2rem 1.5rem;">
+                            {% if row.best_score >= 80 %}
+                                <span style="background: rgba(22, 163, 74, 0.08); color: #047857; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Advanced</span>
+                            {% elif row.best_score >= 50 %}
+                                <span style="background: rgba(245, 158, 11, 0.08); color: #b45309; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Intermediate</span>
+                            {% else %}
+                                <span style="background: rgba(100, 116, 139, 0.08); color: #475569; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Beginner</span>
+                            {% endif %}
+                        </td>
+                        <!-- Streak -->
+                        <td style="padding: 1.2rem 1.5rem; text-align: center; font-weight: 700; color: #f97316;">
+                            🔥 {{ row.streak }}
+                        </td>
+                        <!-- Sessions -->
+                        <td style="padding: 1.2rem 1.5rem; text-align: center; font-weight: 700; color: #475569;">
+                            {{ row.total_sessions }}
+                        </td>
+                        <!-- Avg Accuracy -->
+                        <td style="padding: 1.2rem 1.5rem; text-align: center; font-weight: 800; color: #16a34a;">
+                            {{ "%.0f"|format(row.avg_accuracy) }}%
+                        </td>
+                        <!-- Personal Best -->
+                        <td style="padding: 1.2rem 1.5rem; text-align: center; font-weight: 800; color: #16a34a;">
+                            {{ "%.0f"|format(row.best_score) }}%
+                        </td>
+                        <!-- Action -->
+                        <td style="padding: 1.2rem 1.5rem; text-align: center;">
+                            <a href="{{ url_for('user_progress', user_id=row.user.id) }}" class="btn" style="padding: 0.45rem 1rem; font-size: 0.8rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem; background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: none;">
+                                View Progress <i data-lucide="trending-up" style="width: 13px; height: 13px;"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterLeaderboard() {
+        const searchInput = document.getElementById('leaderboardSearch').value.toLowerCase();
+        const sportSelect = document.getElementById('sportFilter').value;
+        const levelSelect = document.getElementById('levelFilter').value;
+        const rows = document.querySelectorAll('.leaderboard-row');
+        
+        rows.forEach(row => {
+            const username = row.getAttribute('data-username');
+            const sport = row.getAttribute('data-sport');
+            const level = row.getAttribute('data-level');
+            
+            const matchesSearch = username.includes(searchInput);
+            const matchesSport = (sportSelect === 'all') || (sport === sportSelect);
+            const matchesLevel = (levelSelect === 'all') || (level === levelSelect);
+            
+            if (matchesSearch && matchesSport && matchesLevel) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

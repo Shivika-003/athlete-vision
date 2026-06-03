@@ -386,7 +386,7 @@ option {
 .sidebar-brand svg {
     width: 32px;
     height: 32px;
-    color: #1e293b;
+    color: #16a34a;
     flex-shrink: 0;
 }
 .sidebar-brand h3 {
@@ -823,8 +823,8 @@ option {
 /* Dashboard Progress Rings & Visual Enhancements */
 .progress-ring-container {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -833,7 +833,7 @@ option {
 
 .progress-ring-value {
     position: absolute;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 800;
     color: var(--text-main);
 }
@@ -841,28 +841,29 @@ option {
 .progress-ring-circle-bg {
     fill: none;
     stroke: rgba(22, 163, 74, 0.08);
-    stroke-width: 8;
+    stroke-width: 6;
 }
 
 .progress-ring-circle {
     fill: none;
     stroke: #16a34a;
-    stroke-width: 8;
+    stroke-width: 6;
     stroke-linecap: round;
-    stroke-dasharray: 226.2;
-    stroke-dashoffset: 226.2;
+    stroke-dasharray: 163.4;
+    stroke-dashoffset: 163.4;
     transition: stroke-dashoffset 1.5s cubic-bezier(0.1, 0.8, 0.25, 1);
     transform: rotate(-90deg);
     transform-origin: 50% 50%;
 }
 
 .dashboard-premium-card {
-    background: #ffffff;
-    border: 1px solid rgba(22, 163, 74, 0.06);
-    border-radius: 20px;
-    padding: 1.25rem 1.5rem;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015);
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    background: linear-gradient(135deg, #ffffff 25%, #e8f9ee 100%);
+    border: 1px solid rgba(22, 163, 74, 0.15);
+    border-left: 4px solid #16a34a;
+    border-radius: 16px;
+    padding: 0.8rem 1.25rem;
+    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.02);
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -870,9 +871,44 @@ option {
 }
 
 .dashboard-premium-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(22, 163, 74, 0.15);
-    box-shadow: 0 12px 24px rgba(22, 163, 74, 0.06);
+    transform: translateY(-4px);
+    border-color: rgba(22, 163, 74, 0.3);
+    border-left-color: #15803d;
+    border-left-width: 6px;
+    box-shadow: 0 16px 32px rgba(22, 163, 74, 0.12), 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.dashboard-premium-card .stat-icon-wrapper,
+.dashboard-premium-card .progress-ring-container {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+}
+
+.dashboard-premium-card:hover .stat-icon-wrapper {
+    transform: scale(1.15) rotate(4deg);
+    box-shadow: 0 6px 16px rgba(22, 163, 74, 0.15);
+}
+
+.dashboard-premium-card:hover .progress-ring-container {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 768px) {
@@ -885,5 +921,22 @@ option {
     .cred-badges-strip {
         justify-content: center;
     }
+}
+
+.dashboard-analytics-card {
+    background: linear-gradient(135deg, #ffffff 25%, #e8f9ee 100%);
+    border: 1px solid rgba(22, 163, 74, 0.15);
+    border-left: 4px solid #16a34a;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(22, 163, 74, 0.02);
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.dashboard-analytics-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(22, 163, 74, 0.3);
+    border-left-width: 6px;
+    box-shadow: 0 16px 32px rgba(22, 163, 74, 0.1), 0 4px 12px rgba(0, 0, 0, 0.02);
 }
 

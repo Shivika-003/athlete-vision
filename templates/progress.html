@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- ═══════════ COACH / STUDENT DETECTOR BANNER ═══════════ -->
+    {% if viewing_student %}
+    <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 14px; padding: 1.2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 1.5rem;">📋</span>
+            <div>
+                <h4 style="margin: 0; color: #7c3aed; font-weight: 800; font-size: 1.05rem;">Coach Inspection Mode</h4>
+                <p style="margin: 0; color: #6d28d9; font-size: 0.85rem; font-weight: 600;">You are reviewing the training timeline and progress graphs for <strong>{{ student.username }}</strong></p>
+            </div>
+        </div>
+        <a href="{{ url_for('leaderboard') }}" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25); padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Leaderboard
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════ HEADER ═══════════ -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1.5rem;">
+        <div>
+            <p style="color: #16a34a; font-weight: 700; font-size: 0.8rem; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 0.25rem 0;">PERFORMANCE INSIGHTS</p>
+            <h1 style="font-size: 2.2rem; font-weight: 800; color: #1e293b; margin: 0 0 0.35rem 0; letter-spacing: -0.5px;">
+                {% if viewing_student %}{{ student.username }}'s Progress{% else %}My Progress{% endif %}
+            </h1>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">Track form accuracy, posture improvements, and coach drill recommendations over time</p>
+        </div>
+    </div>
+
+    <!-- ═══════════ CONTENT / EMPTY STATE CHECK ═══════════ -->
+    {% if total_sessions == 0 %}
+    <div class="card" style="padding: 3rem 2rem; text-align: center; border-radius: 20px; background: #ffffff;">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📈</span>
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0 0 0.5rem 0;">No Training History Found</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 500px; margin: 0 auto 1.5rem auto; line-height: 1.6;">
+            {% if viewing_student %}This athlete has not completed any training sessions yet. Once they upload and analyze a video, their progress charts will appear here.{% else %}You haven't analyzed any video sessions yet. Head back to the dashboard to upload a practice video and start tracking your biomechanical form!{% endif %}
+        </p>
+        {% if not viewing_student %}
+        <a href="{{ url_for('dashboard') }}#upload-section" class="btn" style="padding: 0.75rem 1.5rem; font-size: 0.9rem; border-radius: 10px; background: linear-gradient(135deg, #16a34a, #15803d); color: white; text-decoration: none;">
+            Upload First Video
+        </a>
+        {% endif %}
+    </div>
+    {% else %}
+
+    <!-- ═══════════ HIGHLIGHTS STRIP ═══════════ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+        <!-- Card 1: Total Sessions -->
+        <div class="card" style="padding: 1.5rem; border-radius: 16px; display: flex; align-items: center; gap: 1.2rem; background: #ffffff;">
+            <div style="background: rgba(22, 163, 74, 0.08); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #16a34a;">
+                🏸
+            </div>
+            <div>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Total Sessions</p>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.6rem; font-weight: 800; color: #1e293b;">{{ total_sessions }}</h3>
+            </div>
+        </div>
+
+        <!-- Card 2: Personal Best -->
+        <div class="card" style="padding: 1.5rem; border-radius: 16px; display: flex; align-items: center; gap: 1.2rem; background: #ffffff;">
+            <div style="background: rgba(22, 163, 74, 0.08); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #16a34a;">
+                🏆
+            </div>
+            <div>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Personal Best</p>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.6rem; font-weight: 800; color: #16a34a;">{{ "%.0f"|format(best_score) }}%</h3>
+            </div>
+        </div>
+
+        <!-- Card 3: Avg Accuracy -->
+        <div class="card" style="padding: 1.5rem; border-radius: 16px; display: flex; align-items: center; gap: 1.2rem; background: #ffffff;">
+            <div style="background: rgba(22, 163, 74, 0.08); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #16a34a;">
+                📈
+            </div>
+            <div>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Avg Learning Accuracy</p>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.6rem; font-weight: 800; color: #16a34a;">{{ "%.0f"|format(avg_accuracy) }}%</h3>
+            </div>
+        </div>
+
+        <!-- Card 4: Practice Streak -->
+        <div class="card" style="padding: 1.5rem; border-radius: 16px; display: flex; align-items: center; gap: 1.2rem; background: #ffffff;">
+            <div style="background: rgba(249, 115, 22, 0.08); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #f97316;">
+                🔥
+            </div>
+            <div>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Practice Streak</p>
+                <h3 style="margin: 0.2rem 0 0 0; font-size: 1.6rem; font-weight: 800; color: #f97316;">{{ streak }} days</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ CHARTS GRID ═══════════ -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+        <!-- Line Chart Card -->
+        <div class="card" style="padding: 1.5rem; border-radius: 20px; display: flex; flex-direction: column; background: #ffffff; min-height: 380px;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0 0 0.25rem 0;">Biomechanical Accuracy Trend</h3>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0 0 1.5rem 0; font-weight: 500;">Learning accuracy and general performance scores over completed sessions</p>
+            <div style="position: relative; flex-grow: 1; height: 260px; width: 100%;">
+                <canvas id="accuracyTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bar Chart Card -->
+        <div class="card" style="padding: 1.5rem; border-radius: 20px; display: flex; flex-direction: column; background: #ffffff; min-height: 380px;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0 0 0.25rem 0;">Form Improvement by Shot Type</h3>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0 0 1.5rem 0; font-weight: 500;">Comparison of initial session scores against the latest session per shot type</p>
+            <div style="position: relative; flex-grow: 1; height: 260px; width: 100%;">
+                <canvas id="improvementBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ FORM CORRECTIONS TIMELINE ═══════════ -->
+    <div style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 800; color: #1e293b; margin: 0 0 0.25rem 0; letter-spacing: -0.3px;">Form Corrections & Drills</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Automated analysis showing solved joint errors and customized recommendations</p>
+    </div>
+
+    {% if not corrections %}
+    <div class="card" style="padding: 2.5rem; text-align: center; border-radius: 20px; background: #ffffff;">
+        <p style="color: var(--text-main); font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">No Form Corrections Logged Yet</p>
+        <p style="color: var(--text-muted); font-size: 0.88rem; max-width: 600px; margin: 0 auto; line-height: 1.55;">
+            To see form corrections, analyze at least 2 practice sessions of the same shot type (e.g. Smash or Clear). The AI Coach will compare your earliest mistakes with your latest sessions and showcase your posture improvements here!
+        </p>
+    </div>
+    {% else %}
+    <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2.5rem;">
+        {% for c in corrections %}
+        <div class="card" style="border: 1px solid rgba(22, 163, 74, 0.12); padding: 1.75rem; border-radius: 20px; background: #ffffff;">
+            <!-- Card Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(22, 163, 74, 0.08); padding-bottom: 0.8rem; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.25rem; font-weight: 800; background: rgba(22, 163, 74, 0.1); color: #16a34a; padding: 0.2rem 0.75rem; border-radius: 8px;">🏸 {{ c.shot_type }}</span>
+                    <span style="color: #64748b; font-size: 0.85rem; font-weight: 600;">Joint: <strong>{{ c.joint }}</strong></span>
+                </div>
+                <span style="background: rgba(22, 163, 74, 0.1); color: #16a34a; font-weight: 800; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    📈 Improved by {{ c.improvement }}°
+                </span>
+            </div>
+
+            <!-- Before vs After -->
+            <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                <!-- Left: Initial state -->
+                <div style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: 12px; padding: 1rem; position: relative;">
+                    <span style="position: absolute; top: -10px; left: 15px; font-size: 0.65rem; background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Initial Form</span>
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.75rem; color: #ef4444; font-weight: 700;">{{ c.first_date }}</p>
+                    <h4 style="margin: 0 0 0.4rem 0; font-size: 0.95rem; font-weight: 800; color: #991b1b;">Posture Deviation</h4>
+                    <p style="margin: 0; font-size: 0.8rem; color: #991b1b; font-weight: 600;">Joint Error: <span style="font-size: 1rem; font-weight: 800;">{{ c.first_dev }}°</span> deviation</p>
+                </div>
+
+                <!-- Connection Arrow -->
+                <div style="text-align: center; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+                    <div style="color: #16a34a; font-size: 1.8rem; font-weight: 800; line-height: 1;">➔</div>
+                    <span style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-top: 2px;">Training</span>
+                </div>
+
+                <!-- Right: Improved state -->
+                <div style="background: rgba(22, 163, 74, 0.04); border: 1px solid rgba(22, 163, 74, 0.2); border-radius: 12px; padding: 1rem; position: relative;">
+                    <span style="position: absolute; top: -10px; left: 15px; font-size: 0.65rem; background: #16a34a; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Corrected Form</span>
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.75rem; color: #16a34a; font-weight: 700;">{{ c.latest_date }}</p>
+                    <h4 style="margin: 0 0 0.4rem 0; font-size: 0.95rem; font-weight: 800; color: #166534;">Correct Position Retained</h4>
+                    <p style="margin: 0; font-size: 0.8rem; color: #166534; font-weight: 600;">Joint Error: <span style="font-size: 1rem; font-weight: 800;">{{ c.latest_dev }}°</span> deviation</p>
+                </div>
+            </div>
+
+            <!-- Drill Recommendation -->
+            <div style="background: #f8fafc; border: 1px solid rgba(15, 23, 42, 0.05); padding: 1rem 1.2rem; border-radius: 12px; display: flex; align-items: flex-start; gap: 0.75rem;">
+                <span style="font-size: 1.1rem; line-height: 1;">💡</span>
+                <div>
+                    <h5 style="margin: 0 0 0.2rem 0; font-size: 0.82rem; font-weight: 800; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">AI Recommended Practice Drill</h5>
+                    <p style="margin: 0; font-size: 0.85rem; color: #475569; line-height: 1.5; font-weight: 600;">{{ c.drill_text }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ═══════════ CHART SCRIPTS ═══════════ -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Line Chart: Accuracy Trend
+            const trendCtx = document.getElementById('accuracyTrendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ chart_labels | tojson }},
+                    datasets: [
+                        {
+                            label: 'Learning Accuracy %',
+                            data: {{ chart_sim_data | tojson }},
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22, 163, 74, 0.04)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#16a34a',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            tension: 0.35,
+                            fill: true
+                        },
+                        {
+                            label: 'Performance %',
+                            data: {{ chart_perf_data | tojson }},
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.04)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#0284c7',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            tension: 0.35,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: { color: '#64748b', font: { weight: '600' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { weight: '600' } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#1e293b',
+                                usePointStyle: true,
+                                font: { size: 12, weight: '700' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#1e293b',
+                            bodyColor: '#475569',
+                            borderColor: 'rgba(15, 23, 42, 0.08)',
+                            borderWidth: 1,
+                            titleFont: { weight: '700' },
+                            padding: 12,
+                            cornerRadius: 10
+                        }
+                    }
+                }
+            });
+
+            // Bar Chart: Improvement by stroke type
+            const barCtx = document.getElementById('improvementBarChart').getContext('2d');
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: [{% for item in bar_data %}'{{ item.shot_type }}',{% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Initial Form %',
+                            data: [{% for item in bar_data %}{{ item.first_score }},{% endfor %}],
+                            backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Latest Form %',
+                            data: [{% for item in bar_data %}{{ item.latest_score }},{% endfor %}],
+                            backgroundColor: 'rgba(22, 163, 74, 0.85)',
+                            borderColor: 'rgba(22, 163, 74, 1)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: { color: '#64748b', font: { weight: '600' } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { weight: '600' } }
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#1e293b',
+                                usePointStyle: true,
+                                font: { size: 12, weight: '700' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#1e293b',
+                            bodyColor: '#475569',
+                            borderColor: 'rgba(15, 23, 42, 0.08)',
+                            borderWidth: 1,
+                            titleFont: { weight: '700' },
+                            padding: 12,
+                            cornerRadius: 10
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %}
