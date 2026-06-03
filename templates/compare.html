@@ -100,30 +100,30 @@
         background: rgba(156,163,175,0.12); color: #9ca3af;
         border: 1px solid rgba(156,163,175,0.2);
     }
-    .kinetic-body { padding: 2rem 2.5rem; }
+    .kinetic-body { padding: 1.25rem 1.75rem; }
 
     /* Joint Row */
     .joint-row {
-        padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 14px;
+        padding: 0.85rem 1rem; margin-bottom: 0.75rem; border-radius: 10px;
         background: rgba(22,163,74,0.02);
         border: 1px solid rgba(22,163,74,0.08);
         transition: background 0.3s ease, box-shadow 0.3s ease;
     }
     .joint-row:hover {
-        background: rgba(22,163,74,0.05);
-        box-shadow: 0 4px 20px rgba(22,163,74,0.08);
+        background: rgba(22,163,74,0.04);
+        box-shadow: 0 2px 12px rgba(22,163,74,0.06);
     }
     .joint-row:last-child { margin-bottom: 0; }
     .joint-title {
         display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .joint-title .name {
-        font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem;
         color: var(--text-main);
     }
     .joint-title .delta {
-        font-size: 1rem; font-weight: 800; padding: 0.3rem 0.85rem;
+        font-size: 0.78rem; font-weight: 800; padding: 0.2rem 0.6rem;
         border-radius: 99px; letter-spacing: 0.3px;
     }
     .delta-up { background: rgba(22,163,74,0.12); color: #16a34a; }
@@ -131,26 +131,26 @@
     .delta-flat { background: rgba(156,163,175,0.1); color: #9ca3af; }
 
     /* Progress Bars */
-    .bar-group { margin-bottom: 0.6rem; }
+    .bar-group { margin-bottom: 0.35rem; }
     .bar-group:last-child { margin-bottom: 0; }
     .bar-label {
         display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.15rem;
     }
     .bar-label .session-name {
-        font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
-        width: 85px;
+        font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;
+        width: 65px;
     }
     .bar-label .bar-value {
-        font-size: 0.85rem; font-weight: 700; min-width: 38px; text-align: right;
+        font-size: 0.72rem; font-weight: 700; min-width: 32px; text-align: right;
     }
     .bar-track {
-        height: 22px; border-radius: 11px; overflow: hidden; position: relative;
+        height: 10px; border-radius: 5px; overflow: hidden; position: relative;
         background: rgba(0,0,0,0.06);
     }
     .bar-fill {
-        height: 100%; border-radius: 11px; transition: width 1.5s cubic-bezier(0.25,0.8,0.25,1);
-        position: relative; min-width: 4px;
+        height: 100%; border-radius: 5px; transition: width 1.5s cubic-bezier(0.25,0.8,0.25,1);
+        position: relative; min-width: 3px;
     }
     .bar-fill::after {
         content: ''; position: absolute; inset: 0;
