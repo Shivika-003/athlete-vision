@@ -101,21 +101,34 @@ main {
 
 /* Premium Light Cards */
 .card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.93), rgba(22, 163, 74, 0.05));
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1.5px solid rgba(22, 163, 74, 0.15);
+    border: 1px solid rgba(22, 163, 74, 0.12);
     border-radius: 20px;
     padding: 2rem;
-    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.03), 0 1px 3px rgba(0, 0, 0, 0.01);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04), 0 1px 8px rgba(15, 23, 42, 0.02);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease;
 }
 
 .card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(22, 163, 74, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
-    border-color: rgba(22, 163, 74, 0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(22, 163, 74, 0.09));
+    box-shadow: 0 20px 40px rgba(22, 163, 74, 0.08), 0 4px 12px rgba(15, 23, 42, 0.03);
+    border-color: rgba(22, 163, 74, 0.25);
+    background: #ffffff;
+}
+
+/* Specific history list item cards to pop off the page */
+.record-item.card {
+    background: #ffffff !important;
+    border: 1px solid rgba(22, 163, 74, 0.14) !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.02) !important;
+}
+
+.record-item.card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 16px 35px rgba(22, 163, 74, 0.08), 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+    border-color: rgba(22, 163, 74, 0.3) !important;
 }
 
 /* Upload Section */
