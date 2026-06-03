@@ -65,33 +65,33 @@ def generate_feedback(comparison_data):
         base_advice = _get_joint_advice(joint, direction, shot_label, ref_name)
         
         prefix = f"({i+1}) " if len(active_weaknesses) > 1 else ""
-        br = " " if i > 0 else ""
+        br = "\n" if i > 0 else ""
         severity = "Significant" if diff > 25 else "Minor"
         
         combined_issue.append(f"{br}{prefix}{severity} {joint} error: {base_advice['issue']}")
         combined_fix.append(f"{br}{prefix}{base_advice['fix']}")
-        combined_why.append(base_advice['why'])
+        combined_why.append(f"{br}{prefix}{base_advice['why']}")
         combined_drill.append(f"{br}{prefix}{base_advice['drill']}")
-        combined_cue.append(base_advice['cue'])
-        checkpoint_items.append(base_advice['checkpoint'])
+        combined_cue.append(f"{br}{prefix}{base_advice['cue']}")
+        checkpoint_items.append(f"{prefix}{base_advice['checkpoint']}")
 
 
     # Add Stability Check (Integrated into Issue & Fix to keep 6-part layout)
     if stability < 75:
-        combined_issue.append(f" ⚠️ Stability Alert: Your head/balance drifted during the swing.")
-        combined_fix.append(" Keep your nose aligned over your leading foot.")
-        combined_drill.append(" Shadow swings on one leg to find your center.")
+        combined_issue.append(f"\n⚠️ Stability Alert: Your head/balance drifted during the swing.")
+        combined_fix.append("\nKeep your nose aligned over your leading foot.")
+        combined_drill.append("\nShadow swings on one leg to find your center.")
 
     # Add "Pro Secret" (Integrated into Checkpoint to keep 6-part layout)
-    pro_secret_text = " 💎 Pro Mindset: Focus on 'Split-step' recovery and staying low to cover the next shot 30% faster."
+    pro_secret_text = "\n💎 Pro Mindset: Focus on 'Split-step' recovery and staying low to cover the next shot 30% faster."
 
     return {
-        'issue': "".join(combined_issue), # Join with empty string as items already have space if needed
+        'issue': "".join(combined_issue),
         'fix': "".join(combined_fix),
-        'why': " ".join(list(dict.fromkeys(combined_why))),
+        'why': "".join(combined_why),
         'drill': "".join(combined_drill),
         'cue': " & ".join(combined_cue),
-        'checkpoint': " ".join(checkpoint_items) + pro_secret_text,
+        'checkpoint': "\n".join(checkpoint_items) + pro_secret_text,
         'similarity': similarity,
         'grade': grade
     }
