@@ -83,6 +83,31 @@
         }
     }
     
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+    
+    @media (max-width: 1024px) {
+        .summary-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
     .shot-card {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 16px;
@@ -1079,41 +1104,51 @@
             <div class="score-ring" style="margin: 0 auto 0.75rem;">
                 <svg viewBox="0 0 140 140">
                     <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(22, 163, 74, 0.08)" stroke-width="10"/>
-                    <circle cx="70" cy="70" r="60" fill="none" stroke="#0ea5e9" stroke-width="10" stroke-linecap="round"
+                    <circle cx="70" cy="70" r="60" fill="none" stroke="#16a34a" stroke-width="10" stroke-linecap="round"
                         stroke-dasharray="{{ (record.similarity_score or 0) * 3.77 }} 377"
                         style="transition: stroke-dasharray 2s ease;"/>
                 </svg>
-                <span class="score-value" style="color: #0ea5e9;">{{ "%.0f"|format(record.similarity_score or 0) }}</span>
+                <span class="score-value" style="color: #16a34a;">{{ "%.0f"|format(record.similarity_score or 0) }}</span>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">LEARNING ACCURACY</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; line-height: 1.2;">TECHNIQUE<br>LEARNING ACCURACY</p>
         </div>
 
         <!-- Arm Score -->
         <div class="analysis-metric-card">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💪</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-pink);">{{ "%.0f"|format(record.arm_score or 0) }}%</div>
+            <div style="margin-bottom: 0.5rem; display: flex; justify-content: center; align-items: center; height: 2rem;">
+                <i data-lucide="git-branch" style="width: 28px; height: 28px; color: #16a34a; stroke-width: 2.2;"></i>
+            </div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #16a34a;">{{ "%.0f"|format(record.arm_score or 0) }}%</div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ARM EXTENSION</p>
         </div>
 
         <!-- Knee Score -->
         <div class="analysis-metric-card">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🦵</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-neon-green);">{{ "%.0f"|format(record.knee_score or 0) }}%</div>
+            <div style="margin-bottom: 0.5rem; display: flex; justify-content: center; align-items: center; height: 2rem;">
+                <i data-lucide="git-merge" style="width: 28px; height: 28px; color: #16a34a; stroke-width: 2.2;"></i>
+            </div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #16a34a;">{{ "%.0f"|format(record.knee_score or 0) }}%</div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">KNEE BEND</p>
         </div>
 
         <!-- Hip/Core Score -->
         <div class="analysis-metric-card">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔄</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: var(--accent-gold);">{{ "%.0f"|format(record.hip_score or 0) }}%</div>
+            <div style="margin-bottom: 0.5rem; display: flex; justify-content: center; align-items: center; height: 2rem;">
+                <i data-lucide="refresh-cw" style="width: 28px; height: 28px; color: #16a34a; stroke-width: 2.2;"></i>
+            </div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #16a34a;">{{ "%.0f"|format(record.hip_score or 0) }}%</div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">CORE PIVOT</p>
         </div>
 
         <!-- Smash Speed Radar (New Feature) -->
         {% if record.smash_speed_kmh and record.smash_speed_kmh > 0 %}
-        <div class="analysis-metric-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.04), rgba(239, 68, 68, 0.08)); border-color: rgba(239, 68, 68, 0.15);">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: #dc2626;">{{ "%.0f"|format(record.smash_speed_kmh) }} <span style="font-size: 0.9rem; font-weight: 600;">km/h</span></div>
+        <div class="analysis-metric-card">
+            <div style="margin-bottom: 0.5rem; display: flex; justify-content: center; align-items: center; height: 2rem;">
+                <i data-lucide="zap" style="width: 28px; height: 28px; color: #16a34a; stroke-width: 2.2;"></i>
+            </div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #16a34a;">
+                {{ "%.0f"|format(record.smash_speed_kmh) }} <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">km/h</span>
+            </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">SHUTTLE SPEED</p>
         </div>
         {% endif %}
@@ -1193,7 +1228,7 @@
         </h3>
 
         <!-- 1. SUMMARY PANEL -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2.5rem;">
+        <div class="summary-grid">
             <!-- Total Shots -->
             <div style="background: rgba(22, 163, 74, 0.03); border: 1.5px solid rgba(22, 163, 74, 0.1); border-radius: 14px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.01);">
                 <p style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 0.4rem 0;">Total Shots</p>
