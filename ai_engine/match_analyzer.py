@@ -188,11 +188,11 @@ def compute_stance(keypoints):
 def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
     """Draws a beautiful translucent sidebar scoreboard on the left of the screen."""
     # Scale panel width and height proportionally to the frame width (W) for dynamic resolutions (e.g. 1080p, 4K, portrait)
-    PW = int(W * 0.30)
+    PW = int(W * 0.27)
     PH = int(PW * 1.55)
     
     # Adjust padding margins from top-left relative to dimensions
-    px1, py1 = int(W * 0.03), int(H * 0.03)
+    px1, py1 = int(W * 0.03), int(H * 0.05)
     px2, py2 = px1 + PW, py1 + PH
 
     # Sleek translucent dark panel backing
@@ -588,9 +588,14 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             a_cl, b_cl, c_cl, d_cl = max(0, a), max(0, b), min(W, c), min(H, d)
             zoom_crop = None
             
-            # Dynamic zoom box dimensions proportional to width (takes ~24% of frame width)
-            ZW = int(W * 0.24)
-            ZH = int(ZW * 1.5)
+            # Dynamic zoom box dimensions matching the left panel perfectly
+            ZW = int(W * 0.27)
+            PH = int(ZW * 1.55)  # Matches left panel height
+            
+            # The top of the right panel should align exactly with the left panel (top_margin = H * 0.05)
+            top_margin = int(H * 0.05)
+            label_h = int(PH * 0.10)
+            ZH = PH - label_h
             
             if c_cl > a_cl and d_cl > b_cl:
                 crop = frame[b_cl:d_cl, a_cl:c_cl].copy()
@@ -603,26 +608,30 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             # Render Zoom Box (top right)
             if zoom_crop is not None:
                 zx1 = W - ZW - int(W * 0.03)
-                zy1 = int(H * 0.03)
-                zx2, zy2 = zx1 + ZW, zy1 + ZH
+                zx2 = zx1 + ZW
+                zy1 = top_margin + label_h
+                zy2 = zy1 + ZH
                 
-                border_pad = max(2, int(ZW * 0.015))
-                outline_pad = max(1, int(ZW * 0.007))
-                thick = max(1, int(ZW * 0.006))
+                # Symmetrical styling with left panel:
+                # 1. Translucent backing
+                overlay = frame.copy()
+                cv2.rectangle(overlay, (zx1, top_margin), (zx2, zy2), (10, 15, 22), -1)
+                cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
                 
-                # Translucent dark borders
-                cv2.rectangle(frame, (zx1 - border_pad, zy1 - border_pad), (zx2 + border_pad, zy2 + border_pad), (15, 20, 25), -1)
-                cv2.rectangle(frame, (zx1 - outline_pad, zy1 - outline_pad), (zx2 + outline_pad, zy2 + outline_pad), NEON_GREEN, thick)
-                
+                # 2. Draw crop inside
                 frame[zy1:zy2, zx1:zx2] = zoom_crop
                 
-                # Pasting zoom label
-                label_h = int(ZH * 0.11)
-                zoom_fs = ZW * 0.003
-                zoom_text_thick = 2 if zoom_fs >= 0.7 else 1
+                # 3. Accent top header block containing "CLOSE-UP" text (filled NEON_GREEN)
+                cv2.rectangle(frame, (zx1, top_margin), (zx2, zy1), NEON_GREEN, -1)
                 
-                cv2.rectangle(frame, (zx1 - outline_pad, zy1 - label_h), (zx2 + outline_pad, zy1 - outline_pad), NEON_GREEN, -1)
-                cv2.putText(frame, "CLOSE-UP", (zx1 + int(ZW * 0.04), zy1 - int(label_h * 0.35)), cv2.FONT_HERSHEY_SIMPLEX, zoom_fs, (0,0,0), zoom_text_thick, cv2.LINE_AA)
+                # 4. Outlining box matching the left panel's border (grey)
+                thick = max(1, int(ZW * 0.005))
+                cv2.rectangle(frame, (zx1, top_margin), (zx2, zy2), (80, 80, 80), thick)
+                
+                # 5. Render label text "CLOSE-UP"
+                zoom_fs = ZW * 0.0025
+                zoom_text_thick = 2 if zoom_fs >= 0.7 else 1
+                cv2.putText(frame, "CLOSE-UP", (zx1 + int(ZW * 0.06), top_margin + int(label_h * 0.75)), cv2.FONT_HERSHEY_SIMPLEX, zoom_fs, (0,0,0), zoom_text_thick, cv2.LINE_AA)
 
         writer.write(frame)
         fi += 1
