@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-    /* PREMIUM DARK GREEN THEME */
-    --bg-main: #020d0e;
-    --bg-dark: #031416;
-    --bg-light: #052225;
-    --card-bg: rgba(5, 34, 37, 0.65);
-    --card-bg-solid: #052225;
-    --border: rgba(34, 197, 94, 0.15);
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-cyan: #22c55e;
-    --accent-neon-green: #4ade80;
-    --accent-neon-blue: #16a34a;
-    --accent-pink: #10b981;
+    /* PROFESSIONAL WHITE + LIGHT GREEN THEME */
+    --bg-main: #f4fcf7;
+    --bg-dark: #f6faf7;
+    --bg-light: #e8f5ed;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-bg-solid: #ffffff;
+    --border: rgba(22, 163, 74, 0.12);
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --accent-cyan: #16a34a;
+    --accent-neon-green: #22c55e;
+    --accent-neon-blue: #15803d;
+    --accent-pink: #059669;
     --accent-gold: #0d9488;
 }
 
@@ -27,10 +27,8 @@
 body {
     background-color: var(--bg-dark);
     background-image: 
-        radial-gradient(circle at 15% 50%, rgba(34, 197, 94, 0.08) 0%, transparent 60%),
-        radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
-        radial-gradient(rgba(34, 197, 94, 0.12) 1.5px, transparent 1.5px);
-    background-size: 100% 100%, 100% 100%, 28px 28px;
+        radial-gradient(circle at 15% 50%, rgba(22, 163, 74, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 85% 30%, rgba(5, 150, 105, 0.08) 0%, transparent 60%);
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
@@ -52,11 +50,11 @@ body::before, body::after {
     opacity: 0.55;
 }
 body::before {
-    background: rgba(34, 197, 94, 0.14);
+    background: rgba(22, 163, 74, 0.14);
     top: -10%; left: -10%;
 }
 body::after {
-    background: rgba(16, 185, 129, 0.10);
+    background: rgba(5, 150, 105, 0.10);
     bottom: -10%; right: -10%;
     animation-delay: -10s;
 }
@@ -68,10 +66,10 @@ body::after {
 
 /* Premium Light Glass Navbar */
 header {
-    background: rgba(2, 13, 14, 0.85);
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+    border-bottom: 1px solid rgba(22, 163, 74, 0.1);
     padding: 1.25rem 5%;
     display: flex;
     justify-content: space-between;
@@ -79,7 +77,7 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .logo {
@@ -101,23 +99,23 @@ main {
     width: 100%;
 }
 
-/* Premium Cards */
+/* Premium Light Cards */
 .card {
-    background: var(--card-bg);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.93), rgba(22, 163, 74, 0.05));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1.5px solid var(--border);
+    border: 1.5px solid rgba(22, 163, 74, 0.15);
     border-radius: 20px;
     padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.03), 0 1px 3px rgba(0, 0, 0, 0.01);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease;
 }
 
 .card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(34, 197, 94, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
-    border-color: rgba(34, 197, 94, 0.3);
-    background: linear-gradient(135deg, rgba(5, 34, 37, 0.8), rgba(34, 197, 94, 0.12));
+    box-shadow: 0 20px 40px rgba(22, 163, 74, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
+    border-color: rgba(22, 163, 74, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(22, 163, 74, 0.09));
 }
 
 /* Upload Section */
@@ -357,7 +355,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 option {
-    background: var(--bg-main);
+    background: #ffffff;
     color: var(--text-main);
 }
 
@@ -365,12 +363,12 @@ option {
 .app-layout {
     display: flex;
     min-height: 100vh;
-    background: transparent;
+    background: #f8faf9;
 }
 .sidebar {
     width: 280px;
-    background: var(--bg-main);
-    border-right: 1px solid var(--border);
+    background: #ffffff;
+    border-right: 1px solid rgba(22, 163, 74, 0.08);
     display: flex;
     flex-direction: column;
     padding: 1.5rem;
@@ -395,7 +393,7 @@ option {
 .sidebar-brand h3 {
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--text-main);
+    color: #1e293b;
     margin: 0;
     line-height: 1.1;
     letter-spacing: -0.5px;
@@ -539,8 +537,8 @@ option {
 
 /* Checklist Loader Steps */
 .loading-step-card {
-    background: var(--card-bg-solid);
-    border: 1px solid var(--border);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 12px;
     padding: 1rem 1.25rem;
     display: flex;
@@ -548,16 +546,16 @@ option {
     justify-content: space-between;
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     text-align: left;
 }
 .loading-step-card.completed {
-    background: rgba(34, 197, 94, 0.08);
-    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.05);
+    border-color: rgba(34, 197, 94, 0.15);
 }
 .loading-step-card.active {
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.08);
 }
 .loading-step-info {
     display: flex;
@@ -568,37 +566,37 @@ option {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 2px solid var(--border);
+    border: 2px solid #cbd5e1;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: #64748b;
     flex-shrink: 0;
     transition: all 0.3s ease;
 }
 .loading-step-card.completed .loading-step-icon {
-    border-color: var(--accent-cyan);
-    background: var(--accent-cyan);
+    border-color: #16a34a;
+    background: #16a34a;
     color: #ffffff;
 }
 .loading-step-card.active .loading-step-icon {
-    border-color: var(--accent-cyan);
+    border-color: #16a34a;
     border-top-color: transparent;
     animation: spin 1s linear infinite;
 }
 .loading-step-title {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--text-main);
+    color: #334155;
     margin-bottom: 0.15rem;
 }
 .loading-step-card.completed .loading-step-title {
-    color: var(--accent-cyan);
+    color: #16a34a;
 }
 .loading-step-desc {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #64748b;
 }
 
 @media (max-width: 992px) {
@@ -651,9 +649,9 @@ option {
     max-width: 380px;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-    background: var(--bg-main);
-    border: 6px solid var(--border);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+    background: #ffffff;
+    border: 6px solid #ffffff;
 }
 
 .hero-img-wrapper img {
@@ -735,13 +733,13 @@ option {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(22, 163, 74, 0.08);
     border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-main);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
     transition: all 0.3s;
 }
 
@@ -771,8 +769,8 @@ option {
 }
 
 .stat-box {
-    background: var(--card-bg-solid);
-    border: 1px solid rgba(22, 163, 74, 0.15);
+    background: #ffffff;
+    border: 1px solid rgba(22, 163, 74, 0.08);
     border-radius: 20px;
     padding: 2.5rem 2rem;
     text-align: center;
@@ -860,7 +858,7 @@ option {
 }
 
 .dashboard-premium-card {
-    background: linear-gradient(135deg, rgba(5, 34, 37, 0.6) 25%, rgba(22, 163, 74, 0.08) 100%);
+    background: linear-gradient(135deg, #ffffff 25%, #e8f9ee 100%);
     border: 1px solid rgba(22, 163, 74, 0.15);
     border-left: 4px solid #16a34a;
     border-radius: 16px;
@@ -927,7 +925,7 @@ option {
 }
 
 .dashboard-analytics-card {
-    background: linear-gradient(135deg, rgba(5, 34, 37, 0.6) 25%, rgba(22, 163, 74, 0.08) 100%);
+    background: linear-gradient(135deg, #ffffff 25%, #e8f9ee 100%);
     border: 1px solid rgba(22, 163, 74, 0.15);
     border-left: 4px solid #16a34a;
     border-radius: 20px;
