@@ -544,7 +544,7 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
             ],
             'improvement_videos': [
                 {'title': 'How to Play The PERFECT SMASH', 'youtube_id': 'JzNEqZcNbk4', 'channel': 'Basic Feather'},
-                {'title': 'Smash Tutorial — Power & Timing', 'youtube_id': 'tT83y-K3-Hk', 'channel': 'Badminton Insight'},
+                {'title': 'Badminton Smash Tutorial - Power & Timing', 'youtube_id': 'Jm0qKk4p1qQ', 'channel': 'Badminton Insight'},
             ]
         },
         'Clear': {
@@ -615,8 +615,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Wobbly ankles on landing — loss of balance during recovery'
             ],
             'improvement_videos': [
-                {'title': 'Net Lift — 3 Ways to Practice', 'youtube_id': 'u1725R0v484', 'channel': 'Basic Feather'},
-                {'title': 'Badminton Lift for Beginners', 'youtube_id': 'tT83y-K3-Hk', 'channel': 'Badminton Insight'},
+                {'title': '3 Ways of Net Lifting', 'youtube_id': 'kS1G0-mCq3g', 'channel': 'Basic Feather'},
+                {'title': 'Lifting in Badminton - What You Need to Know', 'youtube_id': 'kYJ5oVb08aQ', 'channel': 'Badminton Insight'},
             ]
         },
         'Net Shot': {
