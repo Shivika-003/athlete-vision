@@ -7,7 +7,7 @@
     <!-- Card header/media -->
     <div class="shot-thumb-container">
         {% if shot.video_filename %}
-        <video id="shot-video-{{ section_type }}-{{ index }}" class="shot-video" preload="metadata" muted playsinline controls data-start="{{ shot.clip_start }}" data-end="{{ shot.clip_end }}">
+        <video id="shot-video-{{ section_type }}-{{ index }}" class="shot-video" preload="metadata" playsinline controls data-start="{{ shot.clip_start }}" data-end="{{ shot.clip_end }}">
             <source src="{{ url_for('serve_processed_video', filename=shot.video_filename) }}#t={{ shot.clip_start }},{{ shot.clip_end }}" type="video/mp4">
         </video>
         {% else %}
@@ -353,13 +353,13 @@
         font-size: 0.9rem;
     }
     .analysis-metric-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(22, 163, 74, 0.04));
-        border: 1.5px solid rgba(22, 163, 74, 0.12);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(22, 163, 74, 0.08));
+        border: 1.5px solid rgba(22, 163, 74, 0.18);
         border-radius: 16px;
         padding: 1.25rem 0.75rem;
         text-align: center;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.02);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.04);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -368,9 +368,9 @@
     }
     .analysis-metric-card:hover {
         transform: translateY(-4px);
-        border-color: rgba(22, 163, 74, 0.3);
-        box-shadow: 0 12px 28px rgba(22, 163, 74, 0.12);
-        background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(22, 163, 74, 0.06));
+        border-color: rgba(22, 163, 74, 0.38);
+        box-shadow: 0 12px 28px rgba(22, 163, 74, 0.15);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(22, 163, 74, 0.12));
     }
     .feedback-card {
         background: rgba(248, 250, 252, 0.9);
@@ -1217,7 +1217,7 @@
         <!-- ORIGINAL VIDEO -->
         <div class="card animate-fade-in-up" style="margin-bottom: 0;">
             <h3 style="margin-bottom: 1rem; color: #16a34a; font-size: 1.3rem;">📹 Original Uploaded Video</h3>
-            <video controls loop muted playsinline style="max-height: 340px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(22, 163, 74, 0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
+            <video controls loop playsinline style="max-height: 340px; width: 100%; max-width: 850px; border-radius: 12px; border: 2px solid rgba(22, 163, 74, 0.2); background: #000; display: block; margin: 0 auto; object-fit: contain;">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/mp4">
                 <source src="{{ url_for('serve_uploaded_video', filename=record.filename) }}" type="video/quicktime">
             </video>
