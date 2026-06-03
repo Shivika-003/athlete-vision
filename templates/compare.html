@@ -303,6 +303,23 @@
         border-radius: 8px; border-left: 3px solid #16a34a;
         display: inline-block; font-size: 0.85rem; color: #16a34a; font-weight: 500;
     }
+    .drill-yt-link {
+        display: inline-flex; align-items: center; gap: 0.75rem;
+        padding: 0.7rem 1.25rem; border-radius: 12px;
+        background: linear-gradient(135deg, #ff0000, #cc0000);
+        color: white; text-decoration: none; font-weight: 700; font-size: 0.9rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 3px 12px rgba(255,0,0,0.2);
+        flex-shrink: 0; margin-bottom: 0.25rem;
+    }
+    .drill-yt-link:hover {
+        transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,0,0,0.3);
+    }
+    .drill-yt-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        background: rgba(255,255,255,0.2);
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
 
     /* Animate bars on load */
     @keyframes barGrow { from { width: 0; } }
@@ -654,20 +671,20 @@
         <div class="drill-card">
             {% if arm_dif <= hip_dif and arm_dif <= knee_dif %}
                 {% if arm_dif < 0 %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/TXFEXGFj5Ac?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/band_extension_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+arm+extension+drill+band+pull" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Band Pull Extension</h5>
                         <p>Hold a rubber exercise band and pull it straight up over your head (15 times). This strengthens the arm extension muscles critical for powerful smashes and clears.</p>
                         <div class="drill-tip">💡 Tip: Keep your arm super straight. Do not bend your elbow at the top!</div>
                     </div>
                 {% else %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/faG2NWIVM18?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/shadow_swing_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+shadow+swing+drill+technique" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Fast Shadow Swing</h5>
                         <p>Swing your racket very fast without hitting a shuttle (20 times). This builds muscle memory for a clean, explosive arm motion.</p>
@@ -676,20 +693,20 @@
                 {% endif %}
             {% elif hip_dif <= arm_dif and hip_dif <= knee_dif %}
                 {% if hip_dif < 0 %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/twist_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+torso+rotation+drill+core+twist" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Med Ball Torso Twist</h5>
                         <p>Hold a heavy ball and twist your body side to side (15 times). This improves your core rotation for more power in every shot.</p>
                         <div class="drill-tip">💡 Tip: Don't just use your arm to hit! You need to turn your stomach and hips too.</div>
                     </div>
                 {% else %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/H7kpZ9inc10?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/wall_throw_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+power+wall+throw+drill+hip+rotation" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Power Wall Throw</h5>
                         <p>Stand far away and throw a ball against a wall fast. This develops explosive hip and core power.</p>
@@ -698,20 +715,20 @@
                 {% endif %}
             {% else %}
                 {% if knee_dif < 0 %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/lunge_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+court+lunge+drill+footwork" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Court Lunges</h5>
                         <p>Do 10 deep lunges (take a big step forward and bend down). This strengthens your legs for better court coverage.</p>
                         <div class="drill-tip">💡 Tip: You are standing too tall and straight. Bend down low like a spring!</div>
                     </div>
                 {% else %}
-                    <div class="drill-thumb" onclick="this.outerHTML='<iframe width=\'280\' height=\'175\' src=\'https://www.youtube.com/embed/AGY-gQ_3O8Y?autoplay=1\' frameborder=\'0\' allow=\'autoplay; encrypted-media\' allowfullscreen style=\'border-radius: 10px; border: 2px solid #16a34a; flex-shrink: 0;\'></iframe>'">
-                        <img src="{{ url_for('static', filename='img/lunge_drill.png') }}">
-                        <div class="play-btn"><span>▶</span></div>
-                    </div>
+                    <a href="https://www.youtube.com/results?search_query=badminton+explosive+court+jumps+leg+power" target="_blank" rel="noopener noreferrer" class="drill-yt-link">
+                        <div class="drill-yt-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z"/></svg></div>
+                        <span>Watch on YouTube ↗</span>
+                    </a>
                     <div class="drill-info">
                         <h5>🏸 Video Drill: Explosive Court Jumps</h5>
                         <p>Do 10 big jumps on the court. This builds explosive leg power for quick recoveries and lunges.</p>

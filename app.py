@@ -543,8 +543,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Wrist snap released too early — wasting velocity on empty air'
             ],
             'improvement_videos': [
-                {'title': 'How to Play The PERFECT SMASH', 'youtube_id': 'JzNEqZcNbk4', 'channel': 'Basic Feather'},
-                {'title': 'Badminton Smash Tutorial - Power & Timing', 'youtube_id': 'Jm0qKk4p1qQ', 'channel': 'Badminton Insight'},
+                {'title': 'How to Play The PERFECT SMASH', 'youtube_id': 'JzNEqZcNbk4', 'channel': 'Basic Feather', 'search_query': 'badminton+smash+tutorial+technique'},
+                {'title': 'Badminton Smash Tutorial - Power & Timing', 'youtube_id': 'Jm0qKk4p1qQ', 'channel': 'Badminton Insight', 'search_query': 'badminton+smash+power+timing+tutorial'},
             ]
         },
         'Clear': {
@@ -561,8 +561,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Short follow-through across body — clears falling short of opponent\'s baseline'
             ],
             'improvement_videos': [
-                {'title': 'Clear Shot Technique Tutorial', 'youtube_id': 'vGD-VU0sAc8', 'channel': 'Badminton Insight'},
-                {'title': 'Overhead Clear Masterclass', 'youtube_id': 'faG2NWIVM18', 'channel': 'Badminton Famly'},
+                {'title': 'Clear Shot Technique Tutorial', 'youtube_id': 'vGD-VU0sAc8', 'channel': 'Badminton Insight', 'search_query': 'badminton+clear+shot+technique+tutorial'},
+                {'title': 'Overhead Clear Masterclass', 'youtube_id': 'faG2NWIVM18', 'channel': 'Badminton Famly', 'search_query': 'badminton+overhead+clear+masterclass'},
             ]
         },
         'Drop': {
@@ -579,8 +579,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Torso leaning backward — losing control over shuttle trajectory'
             ],
             'improvement_videos': [
-                {'title': 'Drop Shot Tutorial — Deception', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight'},
-                {'title': 'Master the Stick Smash & Drop', 'youtube_id': 's1R1hZ4c2gY', 'channel': 'Badminton Insight'},
+                {'title': 'Drop Shot Tutorial — Deception', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight', 'search_query': 'badminton+drop+shot+deception+tutorial'},
+                {'title': 'Master the Stick Smash & Drop', 'youtube_id': 's1R1hZ4c2gY', 'channel': 'Badminton Insight', 'search_query': 'badminton+stick+smash+drop+tutorial'},
             ]
         },
         'Drive': {
@@ -597,8 +597,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Wrist floppy on impact — drives going out of bounds laterally'
             ],
             'improvement_videos': [
-                {'title': 'Drive Shot Technique Tutorial', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly'},
-                {'title': 'How to Play Drives Perfectly', 'youtube_id': 'AGY-gQ_3O8Y', 'channel': 'Shuttle Life'},
+                {'title': 'Drive Shot Technique Tutorial', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly', 'search_query': 'badminton+drive+shot+technique+tutorial'},
+                {'title': 'How to Play Drives Perfectly', 'youtube_id': 'AGY-gQ_3O8Y', 'channel': 'Shuttle Life', 'search_query': 'badminton+flat+drive+technique'},
             ]
         },
         'Lift': {
@@ -615,8 +615,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Wobbly ankles on landing — loss of balance during recovery'
             ],
             'improvement_videos': [
-                {'title': '3 Ways of Net Lifting', 'youtube_id': 'kS1G0-mCq3g', 'channel': 'Basic Feather'},
-                {'title': 'Lifting in Badminton - What You Need to Know', 'youtube_id': 'R9Z8Xh-87bI', 'channel': 'Badminton Insight'},
+                {'title': '3 Ways of Net Lifting', 'youtube_id': 'kS1G0-mCq3g', 'channel': 'Basic Feather', 'search_query': 'badminton+net+lift+forehand+tutorial'},
+                {'title': 'Lifting in Badminton - What You Need to Know', 'youtube_id': 'R9Z8Xh-87bI', 'channel': 'Badminton Insight', 'search_query': 'badminton+lifting+technique+tutorial'},
             ]
         },
         'Net Shot': {
@@ -633,8 +633,8 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
                 'Stiff wrist on contact — lack of touch feel'
             ],
             'improvement_videos': [
-                {'title': 'Net Shot Masterclass Tutorial', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight'},
-                {'title': 'Net Kill & Net Shot Tips', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly'},
+                {'title': 'Net Shot Masterclass Tutorial', 'youtube_id': 'CsVJ5A1SwIg', 'channel': 'Badminton Insight', 'search_query': 'badminton+net+shot+masterclass+tutorial'},
+                {'title': 'Net Kill & Net Shot Tips', 'youtube_id': 'H7kpZ9inc10', 'channel': 'Badminton Famly', 'search_query': 'badminton+net+kill+net+shot+tips'},
             ]
         }
     }
