@@ -192,8 +192,8 @@ def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
     PH = int(PW * 1.55)
     
     # Adjust padding margins from top-left relative to dimensions
-    px1, py1 = int(W * 0.03), int(H * 0.05)
-    px2, py2 = px1 + PW, py1 + PH
+    px1, py1 = 0, 0
+    px2, py2 = PW, PH
 
     # Sleek translucent dark panel backing
     overlay = frame.copy()
@@ -637,8 +637,8 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             ZW = int(W * 0.27)
             PH = int(ZW * 1.55)  # Matches left panel height
             
-            # The top of the right panel should align exactly with the left panel (top_margin = H * 0.05)
-            top_margin = int(H * 0.05)
+            # The top of the right panel should align exactly with the left panel (top_margin = 0)
+            top_margin = 0
             label_h = int(PH * 0.10)
             ZH = PH - label_h
             
@@ -652,7 +652,7 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
                             
             # Render Zoom Box (top right)
             if zoom_crop is not None:
-                zx1 = W - ZW - int(W * 0.03)
+                zx1 = W - ZW
                 zx2 = zx1 + ZW
                 zy1 = top_margin + label_h
                 zy2 = zy1 + ZH
