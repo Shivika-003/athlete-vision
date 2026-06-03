@@ -2,9 +2,9 @@
 
 :root {
     /* PROFESSIONAL WHITE + LIGHT GREEN THEME */
-    --bg-main: #f8faf9;
-    --bg-dark: #ffffff;
-    --bg-light: #f0f7f2;
+    --bg-main: #f4fcf7;
+    --bg-dark: #f6faf7;
+    --bg-light: #e8f5ed;
     --card-bg: rgba(255, 255, 255, 0.85);
     --card-bg-solid: #ffffff;
     --border: rgba(22, 163, 74, 0.12);
@@ -27,8 +27,8 @@
 body {
     background-color: var(--bg-dark);
     background-image: 
-        radial-gradient(circle at 15% 50%, rgba(22, 163, 74, 0.04) 0%, transparent 50%),
-        radial-gradient(circle at 85% 30%, rgba(5, 150, 105, 0.04) 0%, transparent 50%);
+        radial-gradient(circle at 15% 50%, rgba(22, 163, 74, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 85% 30%, rgba(5, 150, 105, 0.08) 0%, transparent 60%);
     background-attachment: fixed;
     color: var(--text-main);
     min-height: 100vh;
@@ -47,14 +47,14 @@ body::before, body::after {
     filter: blur(120px);
     z-index: -1;
     animation: floatingMesh 20s infinite alternate ease-in-out;
-    opacity: 0.4;
+    opacity: 0.55;
 }
 body::before {
-    background: rgba(22, 163, 74, 0.08);
+    background: rgba(22, 163, 74, 0.14);
     top: -10%; left: -10%;
 }
 body::after {
-    background: rgba(5, 150, 105, 0.06);
+    background: rgba(5, 150, 105, 0.10);
     bottom: -10%; right: -10%;
     animation-delay: -10s;
 }
