@@ -616,7 +616,7 @@ def generate_shadow_feedback(overall_score, needs_work_count, total_shots, break
             ],
             'improvement_videos': [
                 {'title': '3 Ways of Net Lifting', 'youtube_id': 'kS1G0-mCq3g', 'channel': 'Basic Feather'},
-                {'title': 'Lifting in Badminton - What You Need to Know', 'youtube_id': 'kYJ5oVb08aQ', 'channel': 'Badminton Insight'},
+                {'title': 'Lifting in Badminton - What You Need to Know', 'youtube_id': 'R9Z8Xh-87bI', 'channel': 'Badminton Insight'},
             ]
         },
         'Net Shot': {
