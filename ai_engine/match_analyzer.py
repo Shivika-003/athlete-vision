@@ -187,8 +187,8 @@ def compute_stance(keypoints):
 
 def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
     """Draws a beautiful translucent sidebar scoreboard on the left of the screen."""
-    PW, PH = 140, 215
-    px1, py1 = 20, 20
+    PW, PH = 420, 645
+    px1, py1 = 30, 30
     px2, py2 = px1 + PW, py1 + PH
 
     # Sleek translucent dark panel backing
@@ -197,19 +197,19 @@ def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
     cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
     
     # Accent top border
-    cv2.rectangle(frame, (px1, py1), (px2, py1 + 4), NEON_GREEN, -1)
-    cv2.rectangle(frame, (px1, py1), (px2, py2), (80, 80, 80), 1)
+    cv2.rectangle(frame, (px1, py1), (px2, py1 + 12), NEON_GREEN, -1)
+    cv2.rectangle(frame, (px1, py1), (px2, py2), (80, 80, 80), 2)
 
     fn = cv2.FONT_HERSHEY_SIMPLEX
-    fs, lh = 0.35, 14
-    lx, y = px1 + 8, py1 + 18
+    fs, lh = 1.05, 42
+    lx, y = px1 + 24, py1 + 54
 
     def _row(label, value, val_color=WHITE):
         nonlocal y
-        cv2.putText(frame, label, (lx, y), fn, fs, (200, 200, 200), 1, cv2.LINE_AA)
-        (vw, vh), _ = cv2.getTextSize(str(value), fn, fs, 1)
-        val_x = px2 - 8 - vw
-        cv2.putText(frame, str(value), (val_x, y), fn, fs, val_color, 1, cv2.LINE_AA)
+        cv2.putText(frame, label, (lx, y), fn, fs, (200, 200, 200), 2, cv2.LINE_AA)
+        (vw, vh), _ = cv2.getTextSize(str(value), fn, fs, 2)
+        val_x = px2 - 24 - vw
+        cv2.putText(frame, str(value), (val_x, y), fn, fs, val_color, 2, cv2.LINE_AA)
         y += lh
 
     # Active Technique States
@@ -219,12 +219,12 @@ def draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H):
     _row("Velocity", str(speed_label), WHITE)
     
     # Elegant Divider Line
-    cv2.line(frame, (px1 + 8, y - 4), (px2 - 8, y - 4), (80, 80, 80), 1)
-    y += 8
+    cv2.line(frame, (px1 + 24, y - 12), (px2 - 24, y - 12), (80, 80, 80), 2)
+    y += 24
     
     # Tabular Repetition Scoreboard
-    cv2.putText(frame, "REPETITIONS", (lx, y), fn, 0.32, (0, 220, 255), 1, cv2.LINE_AA)
-    y += 12
+    cv2.putText(frame, "REPETITIONS", (lx, y), fn, 0.96, (0, 220, 255), 2, cv2.LINE_AA)
+    y += 36
     
     _row("  Smashes", str(counts.get('Smash', 0)), (255, 100, 100))
     _row("  Clears", str(counts.get('Clear', 0)), (255, 200, 100))
@@ -244,7 +244,7 @@ def draw_player_box(frame, box, ghost_frames, shot, grip, counts, speed_label, s
     lbl = "SHADOW ACTIVE" if ghost_frames == 0 else "ACQUIRING POSE..."
     lbl_color = NEON_GREEN if ghost_frames == 0 else YELLOW
     
-    cv2.putText(frame, lbl, (a, max(0, b - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.35, lbl_color, 1, cv2.LINE_AA)
+    cv2.putText(frame, lbl, (a, max(0, b - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.60, lbl_color, 2, cv2.LINE_AA)
     draw_data_panel(frame, box, shot, grip, counts, speed_label, stance, W, H)
 
 def process_match_video(input_path, output_filename, output_dir="processed", player1_name="Player 1", player2_name="Player 2"):
@@ -571,7 +571,7 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             a, b, c, d = map(int, smooth_box)
             a_cl, b_cl, c_cl, d_cl = max(0, a), max(0, b), min(W, c), min(H, d)
             zoom_crop = None
-            ZW, ZH = 110, 165
+            ZW, ZH = 330, 495
             if c_cl > a_cl and d_cl > b_cl:
                 crop = frame[b_cl:d_cl, a_cl:c_cl].copy()
                 zoom_crop = cv2.resize(crop, (ZW, ZH))
@@ -582,18 +582,18 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
                             
             # Render Zoom Box (top right)
             if zoom_crop is not None:
-                zx1, zy1 = W - ZW - 10, 10
+                zx1, zy1 = W - ZW - 30, 30
                 zx2, zy2 = zx1 + ZW, zy1 + ZH
                 
                 # Translucent dark borders
-                cv2.rectangle(frame, (zx1-2, zy1-2), (zx2+2, zy2+2), (15, 20, 25), -1)
-                cv2.rectangle(frame, (zx1-1, zy1-1), (zx2+1, zy2+1), NEON_GREEN, 1)
+                cv2.rectangle(frame, (zx1-6, zy1-6), (zx2+6, zy2+6), (15, 20, 25), -1)
+                cv2.rectangle(frame, (zx1-3, zy1-3), (zx2+3, zy2+3), NEON_GREEN, 2)
                 
                 frame[zy1:zy2, zx1:zx2] = zoom_crop
                 
                 # Pasting zoom label
-                cv2.rectangle(frame, (zx1-1, zy1-18), (zx1 + 75, zy1-1), NEON_GREEN, -1)
-                cv2.putText(frame, "CLOSE-UP", (zx1 + 4, zy1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0,0,0), 1, cv2.LINE_AA)
+                cv2.rectangle(frame, (zx1-3, zy1-54), (zx1 + 225, zy1-3), NEON_GREEN, -1)
+                cv2.putText(frame, "CLOSE-UP", (zx1 + 12, zy1 - 18), cv2.FONT_HERSHEY_SIMPLEX, 1.05, (0,0,0), 2, cv2.LINE_AA)
 
         writer.write(frame)
         fi += 1
