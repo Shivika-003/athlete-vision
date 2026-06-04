@@ -18,7 +18,7 @@ class DummyReferencePlayer:
     description = "Form benchmarks optimized for optimal range of motion, power, and injury prevention."
     is_active = True
 
-def seed_reference_from_json(json_path="reference_data/an_seyoung.json"):
+def seed_reference_from_json(json_path="reference_data/multisense_badminton.json"):
     """Seeding is deprecated as we are now using static in-memory ideal angles."""
     print("[RefBuilder] Seeding skipped: Platform is using offline biomechanical benchmarks.")
     return DummyReferencePlayer()

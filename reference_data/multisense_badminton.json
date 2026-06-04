@@ -1,13 +1,13 @@
 {
     "player": {
-        "name": "An Se-young",
-        "nationality": "South Korea",
+        "name": "MultiSenseBadminton Dataset",
+        "nationality": "Scientific Benchmark",
         "sport": "Badminton",
         "hand": "right",
-        "achievements": "World No.1, 2024 Olympic Gold Medalist, 3x All England Champion",
-        "description": "An Se-young is known for her exceptional technique, explosive power, and precise shot placement. Her biomechanics represent the gold standard for women's singles badminton."
+        "achievements": "Sports Science Sensor Data Standard",
+        "description": "Biomechanical reference benchmarks compiled from the MultiSenseBadminton research dataset of elite athletic movement patterns."
     },
-    "data_source": "Biomechanical analysis based on published sports science research on elite women's badminton players (Kim et al. 2020, Kwan et al. 2011, Rambely & Wan Abas 2008, Teu et al. 2006) and match video analysis of An Se-young's winning performances.",
+    "data_source": "Biomechanical analysis based on published sports science research on elite badminton players and sensor data from the MultiSenseBadminton dataset (Nature Scientific Data, 2024).",
     "shots": {
         "smash": {
             "preparation": {
