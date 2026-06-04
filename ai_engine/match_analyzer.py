@@ -643,7 +643,10 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
             ZH = PH - label_h
             
             if c_cl > a_cl and d_cl > b_cl:
-                crop = frame[b_cl:d_cl, a_cl:c_cl].copy()
+                box_h = d_cl - b_cl
+                # Zoom in on the upper 60% of the body to focus on face/racket action
+                crop_d = min(H, b_cl + int(box_h * 0.60))
+                crop = frame[b_cl:crop_d, a_cl:c_cl].copy()
                 zoom_crop = cv2.resize(crop, (ZW, ZH))
 
             draw_player_box(frame, smooth_box, ghost_frames,
@@ -673,10 +676,9 @@ def process_match_video(input_path, output_filename, output_dir="processed", pla
                 thick = max(1, int(ZW * 0.005))
                 cv2.rectangle(frame, (zx1, top_margin), (zx2, zy2), (80, 80, 80), thick)
                 
-                # 5. Render label text "CLOSE-UP"
-                zoom_fs = ZW * 0.0025
-                zoom_text_thick = 2 if zoom_fs >= 0.7 else 1
-                cv2.putText(frame, "CLOSE-UP", (zx1 + int(ZW * 0.06), top_margin + int(label_h * 0.75)), cv2.FONT_HERSHEY_SIMPLEX, zoom_fs, (0,0,0), zoom_text_thick, cv2.LINE_AA)
+                # 5. Render label text "CLOSE-UP" (sleek thinner text with thickness=1)
+                zoom_fs = ZW * 0.0022
+                cv2.putText(frame, "CLOSE-UP", (zx1 + int(ZW * 0.06), top_margin + int(label_h * 0.72)), cv2.FONT_HERSHEY_SIMPLEX, zoom_fs, (0,0,0), 1, cv2.LINE_AA)
 
         writer.write(frame)
         fi += 1
